@@ -3,756 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>路橋測量終極戰情室 | Ultimate Command Center</title>
+    <title>路橋測量專家系統 | Master Dashboard</title>
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --sidebar-bg: #1e293b;
-            --panel-bg: #111827;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            
-            /* Phase Colors */
-            --c-basics: #38bdf8; /* Blue */
-            --c-vertical: #22c55e; /* Green */
-            --c-spatial: #818cf8; /* Indigo */
-            --c-geo: #f59e0b; /* Amber */
-            --c-struct: #f43f5e; /* Rose */
-            --c-adv: #a855f7; /* Purple */
-        }
-
+        :root { --bg-dark: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-sub: #94a3b8; --accent: #38bdf8; --phase-1: #22c55e; --phase-2: #eab308; --phase-3: #f97316; --phase-4: #ef4444; --phase-5: #a855f7; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: "Segoe UI", "Microsoft JhengHei", monospace; background: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
-
-        /* Sidebar */
-        aside {
-            width: 260px;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-        
-        .brand {
-            padding: 20px;
-            font-size: 20px;
-            font-weight: 800;
-            color: white;
-            border-bottom: 1px solid var(--border);
-            letter-spacing: 1px;
-        }
-        .brand span { color: var(--c-basics); }
-
-        .menu-group { margin-bottom: 10px; }
-        .menu-title {
-            padding: 15px 20px 5px;
-            font-size: 12px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            font-weight: bold;
-        }
-        
-        .nav-item {
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
-            border-left: 3px solid transparent;
-            color: #cbd5e1;
-        }
-        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-        .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
-        
-        /* Specific active borders */
-        .g-basics .nav-item.active { border-left-color: var(--c-basics); }
-        .g-vertical .nav-item.active { border-left-color: var(--c-vertical); }
-        .g-spatial .nav-item.active { border-left-color: var(--c-spatial); }
-        .g-geo .nav-item.active { border-left-color: var(--c-geo); }
-        .g-struct .nav-item.active { border-left-color: var(--c-struct); }
-        .g-adv .nav-item.active { border-left-color: var(--c-adv); }
-
-        /* Main Content */
-        main { flex: 1; display: flex; flex-direction: column; position: relative; }
-        
-        header {
-            height: 60px;
-            background: var(--sidebar-bg);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-        }
-        .tool-title { font-size: 18px; font-weight: bold; }
-        .sys-time { font-family: 'Consolas', monospace; color: var(--c-basics); font-size: 16px; }
-
-        .workspace {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: var(--bg-dark);
-        }
-
-        /* Tool Panels (Hidden by default) */
-        .tool-panel { display: none; max-width: 1200px; margin: 0 auto; animation: fadeIn 0.3s; }
-        .tool-panel.active { display: block; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* UI Components */
-        .card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); }
-        .card h3 { margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; text-transform: uppercase; color: var(--text-muted); }
-        
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
-        input, select, textarea {
-            width: 100%; padding: 10px; background: #0f172a; border: 1px solid var(--border);
-            color: white; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 16px;
-        }
-        input:focus { outline: 1px solid var(--c-basics); border-color: transparent; }
-        
-        .row { display: flex; gap: 15px; margin-bottom: 10px; }
-        .col { flex: 1; }
-
-        .btn {
-            width: 100%; padding: 12px; border: none; border-radius: 4px;
-            font-weight: bold; cursor: pointer; font-size: 16px; transition: filter 0.2s; color: #000;
-        }
-        .btn:hover { filter: brightness(1.1); }
-        
-        .btn-primary { background: var(--c-basics); color: #000; }
-        .btn-success { background: var(--c-vertical); color: #000; }
-        .btn-warn { background: var(--c-geo); color: #000; }
-        .btn-danger { background: var(--c-struct); color: white; }
-        .btn-code { background: var(--c-adv); color: white; font-family: 'Consolas', monospace; }
-
-        /* Result Display */
-        .result-box {
-            background: black; border: 1px solid var(--border); padding: 15px;
-            border-radius: 4px; font-family: 'Consolas', monospace; margin-top: 15px;
-            min-height: 50px; white-space: pre-wrap; color: #a3e635;
-        }
-        .res-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #333; padding: 5px 0; }
-        .res-label { color: #888; }
-        .res-val { color: white; font-weight: bold; }
-
-        /* Tables */
-        table { width: 100%; border-collapse: collapse; font-family: 'Consolas', monospace; font-size: 14px; }
-        th { text-align: left; color: #888; border-bottom: 1px solid #333; padding: 8px; }
-        td { padding: 8px; border-bottom: 1px solid #222; color: #ccc; }
-        
-        /* Canvas */
-        canvas { background: #000; border: 1px solid #333; width: 100%; height: 300px; display: block; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+        header { background: rgba(15, 23, 42, 0.95); padding: 2rem; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; }
+        .brand h1 { font-size: 28px; font-weight: 800; letter-spacing: 1px; margin: 0; }
+        .brand span { color: var(--accent); }
+        .brand p { color: var(--text-sub); font-size: 14px; margin-top: 5px; }
+        .status-badge { background: #1e293b; padding: 8px 16px; border-radius: 20px; font-size: 14px; border: 1px solid #334155; color: var(--accent); }
+        main { flex: 1; max-width: 1600px; margin: 0 auto; padding: 40px 20px; width: 100%; }
+        .phase-title { font-size: 18px; color: var(--text-sub); margin: 40px 0 20px 0; padding-bottom: 10px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px; }
+        .phase-tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: #0f172a; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--card-bg); border: 1px solid #334155; border-radius: 12px; padding: 25px; transition: all 0.3s ease; text-decoration: none; color: inherit; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.2); }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .lesson-id { font-size: 14px; font-family: 'Consolas', monospace; color: var(--text-sub); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; }
+        .card h3 { font-size: 20px; margin-bottom: 10px; line-height: 1.4; margin-top: 0; }
+        .card p { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin-bottom: 20px; flex: 1; }
+        .tools { display: flex; gap: 10px; flex-wrap: wrap; }
+        .tool-tag { font-size: 12px; background: #334155; padding: 4px 10px; border-radius: 12px; color: #e2e8f0; }
+        .p1::before { background: var(--phase-1); } .p1 .lesson-id { color: var(--phase-1); }
+        .p2::before { background: var(--phase-2); } .p2 .lesson-id { color: var(--phase-2); }
+        .p3::before { background: var(--phase-3); } .p3 .lesson-id { color: var(--phase-3); }
+        .p4::before { background: var(--phase-4); } .p4 .lesson-id { color: var(--phase-4); }
+        .p5::before { background: var(--phase-5); } .p5 .lesson-id { color: var(--phase-5); }
+        footer { text-align: center; padding: 40px; color: #475569; font-size: 14px; border-top: 1px solid #1e293b; margin-top: auto; }
     </style>
 </head>
 <body>
 
-<aside>
-    <div class="brand">BRIDGE <span>PRO</span></div>
-
-    <div class="menu-group g-basics">
-        <div class="menu-title">Phase 1: 基礎核心</div>
-        <div class="nav-item active" onclick="switchTool('l1', this)">L1 誤差傳播計算</div>
-        <div class="nav-item" onclick="switchTool('l2', this)">L2 坐標反算 (TWD97)</div>
+<header>
+    <div class="brand">
+        <h1>BRIDGE <span>SURVEYOR</span> PRO</h1>
+        <p>全端路橋測量專家系統 | Full-Stack Engineering Dashboard</p>
     </div>
-
-    <div class="menu-group g-vertical">
-        <div class="menu-title">Phase 2: 高程控制</div>
-        <div class="nav-item" onclick="switchTool('l3', this)">L3 水準儀兩杭檢校</div>
-        <div class="nav-item" onclick="switchTool('l4', this)">L4 水準網平差</div>
-    </div>
-
-    <div class="menu-group g-spatial">
-        <div class="menu-title">Phase 3: 立體測量</div>
-        <div class="nav-item" onclick="switchTool('l5', this)">L5 三角高程 (C&R)</div>
-        <div class="nav-item" onclick="switchTool('l6', this)">L6 自由設站 (Resection)</div>
-    </div>
-
-    <div class="menu-group g-geo">
-        <div class="menu-title">Phase 4: 幾何放樣</div>
-        <div class="nav-item" onclick="switchTool('l7', this)">L7 曲線偏角法</div>
-        <div class="nav-item" onclick="switchTool('l8', this)">L8 豎曲線與超高</div>
-    </div>
-
-    <div class="menu-group g-struct">
-        <div class="menu-title">Phase 5: 結構工程</div>
-        <div class="nav-item" onclick="switchTool('l9', this)">L9 預拱度計算</div>
-        <div class="nav-item" onclick="switchTool('l10', this)">L10 變位監測戰情</div>
-    </div>
-
-    <div class="menu-group g-adv">
-        <div class="menu-title">Masters: 進階模擬</div>
-        <div class="nav-item" onclick="switchTool('l11', this)">L11 Python 自動化</div>
-        <div class="nav-item" onclick="switchTool('l12', this)">L12 LiDAR 降噪</div>
-        <div class="nav-item" onclick="switchTool('l13', this)">L13 UAV 土方計算</div>
-    </div>
-</aside>
+    <div class="status-badge">SYSTEM READY</div>
+</header>
 
 <main>
-    <header>
-        <div class="tool-title" id="page-title">L1 誤差傳播計算</div>
-        <div class="sys-time" id="clock">00:00:00</div>
-    </header>
+    <div class="phase-title"><span class="phase-tag" style="background:var(--phase-1)">PHASE 1</span>誤差理論與基礎坐標</div>
+    <div class="grid">
+        <a href="lesson01.html" class="card p1">
+            <div class="card-header"><span class="lesson-id">LESSON 01</span></div>
+            <h3>誤差傳播定律</h3>
+            <p>掌握數據的靈魂。高斯分佈圖解與加權觀測值分析。</p>
+            <div class="tools"><span class="tool-tag">權重平均計算器</span></div>
+        </a>
+        <a href="lesson02.html" class="card p1">
+            <div class="card-header"><span class="lesson-id">LESSON 02</span></div>
+            <h3>坐標系統與幾何</h3>
+            <p>TWD97 投影變形與尺度係數解析。</p>
+            <div class="tools"><span class="tool-tag">坐標反算</span></div>
+        </a>
+    </div>
 
-    <div class="workspace">
-        
-        <div id="l1" class="tool-panel active">
-            <div class="card">
-                <h3>權重觀測平均計算器</h3>
-                <div id="l1-inputs">
-                    </div>
-                <button class="btn btn-primary" style="margin-top:10px" onclick="l1_addRow()">+ 增加觀測數據</button>
-                <button class="btn btn-primary" style="margin-top:10px; background:#1e293b; color:white;" onclick="l1_calc()">計算加權平均與中誤差</button>
-                <div class="result-box" id="l1-res">等待計算...</div>
-            </div>
-        </div>
+    <div class="phase-title"><span class="phase-tag" style="background:var(--phase-2)">PHASE 2</span>高程控制權威</div>
+    <div class="grid">
+        <a href="lesson03.html" class="card p2">
+            <div class="card-header"><span class="lesson-id">LESSON 03</span></div>
+            <h3>水準儀檢校</h3>
+            <p>視準軸誤差原理與兩杭檢校法 (Two-Peg Test)。</p>
+            <div class="tools"><span class="tool-tag">儀器健康診斷</span></div>
+        </a>
+        <a href="lesson04.html" class="card p2">
+            <div class="card-header"><span class="lesson-id">LESSON 04</span></div>
+            <h3>閉合與平差</h3>
+            <p>閉合環線計算與容許精度檢核。</p>
+            <div class="tools"><span class="tool-tag">水準平差表</span></div>
+        </a>
+    </div>
 
-        <div id="l2" class="tool-panel">
-            <div class="card">
-                <h3>坐標反算 (TWD97)</h3>
-                <div class="row">
-                    <div class="col"><label>起點 N</label><input type="number" id="l2-n1" value="2685210.550"></div>
-                    <div class="col"><label>起點 E</label><input type="number" id="l2-e1" value="215430.220"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>終點 N</label><input type="number" id="l2-n2" value="2685350.120"></div>
-                    <div class="col"><label>終點 E</label><input type="number" id="l2-e2" value="215580.450"></div>
-                </div>
-                <button class="btn btn-primary" onclick="l2_calc()">計算方位角與距離</button>
-                <div class="result-box" id="l2-res">等待計算...</div>
-            </div>
-        </div>
+    <div class="phase-title"><span class="phase-tag" style="background:var(--phase-3)">PHASE 3</span>立體空間控制</div>
+    <div class="grid">
+        <a href="lesson05.html" class="card p3">
+            <div class="card-header"><span class="lesson-id">LESSON 05</span></div>
+            <h3>全站儀測距原理</h3>
+            <p>精密三角高程測量與球氣差 (C&R) 改正。</p>
+            <div class="tools"><span class="tool-tag">三角高程計算器</span></div>
+        </a>
+        <a href="lesson06.html" class="card p3">
+            <div class="card-header"><span class="lesson-id">LESSON 06</span></div>
+            <h3>導線與後方交會</h3>
+            <p>雙點距離交會原理與圖形強度分析。</p>
+            <div class="tools"><span class="tool-tag">自由設站模擬器</span></div>
+        </a>
+    </div>
 
-        <div id="l3" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-vertical)">
-                <h3>水準儀兩杭檢校</h3>
-                <div class="row">
-                    <div class="col"><label>置中測 A讀數</label><input type="number" id="l3-a1" placeholder="1.500"></div>
-                    <div class="col"><label>置中測 B讀數</label><input type="number" id="l3-b1" placeholder="1.450"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>近B測 A讀數</label><input type="number" id="l3-a2" placeholder="1.520"></div>
-                    <div class="col"><label>近B測 B讀數</label><input type="number" id="l3-b2" placeholder="1.465"></div>
-                </div>
-                <div class="row"><div class="col"><label>標尺距離 (m)</label><input type="number" id="l3-dist" value="60"></div></div>
-                <button class="btn btn-success" onclick="l3_calc()">診斷儀器誤差</button>
-                <div class="result-box" id="l3-res">等待診斷...</div>
-            </div>
-        </div>
+    <div class="phase-title"><span class="phase-tag" style="background:var(--phase-4)">PHASE 4</span>幾何放樣實務</div>
+    <div class="grid">
+        <a href="lesson07.html" class="card p4">
+            <div class="card-header"><span class="lesson-id">LESSON 07</span></div>
+            <h3>平面曲線放樣</h3>
+            <p>單曲線、緩和曲線要素與偏角法計算。</p>
+            <div class="tools"><span class="tool-tag">偏角法生成器</span></div>
+        </a>
+        <a href="lesson08.html" class="card p4">
+            <div class="card-header"><span class="lesson-id">LESSON 08</span></div>
+            <h3>豎曲線與超高</h3>
+            <p>拋物線高程計算與排水坡度檢核。</p>
+            <div class="tools"><span class="tool-tag">樁號高程表</span></div>
+        </a>
+    </div>
 
-        <div id="l4" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-vertical)">
-                <h3>水準網平差</h3>
-                <div class="row">
-                    <div class="col"><label>起點高程</label><input type="number" id="l4-startH" value="10.000"></div>
-                    <div class="col"><label>終點高程</label><input type="number" id="l4-endH" value="10.000"></div>
-                </div>
-                <table id="l4-table">
-                    <thead><tr><th>點名</th><th>高程差 dH</th><th>距離 (m)</th><th>操作</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-                <button class="btn btn-success" style="margin-top:10px" onclick="l4_addRow()">+ 增加測段</button>
-                <button class="btn btn-success" style="margin-top:10px; background:#1e293b; color:white;" onclick="l4_calc()">執行平差</button>
-                <div class="result-box" id="l4-res">等待數據...</div>
-            </div>
-        </div>
-
-        <div id="l5" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-spatial)">
-                <h3>三角高程 (C&R 改正)</h3>
-                <div class="row">
-                    <div class="col"><label>斜距 S</label><input type="number" id="l5-s" placeholder="150.550"></div>
-                    <div class="col"><label>天頂角 Z (度.分秒)</label><input type="number" id="l5-z" placeholder="85.3020"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>儀高 i</label><input type="number" id="l5-i" value="1.500"></div>
-                    <div class="col"><label>稜鏡高 z</label><input type="number" id="l5-t" value="1.500"></div>
-                </div>
-                <div class="row"><div class="col"><label>測站高 Ha</label><input type="number" id="l5-ha" value="100.000"></div></div>
-                <button class="btn" style="background:var(--c-spatial); color:black;" onclick="l5_calc()">計算精確高程</button>
-                <div class="result-box" id="l5-res">等待雷射發射...</div>
-            </div>
-        </div>
-
-        <div id="l6" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-spatial)">
-                <h3>自由設站 (距離後方交會)</h3>
-                <div class="row">
-                    <div class="col"><label>A點 N</label><input type="number" id="l6-na" value="1000"></div>
-                    <div class="col"><label>A點 E</label><input type="number" id="l6-ea" value="1000"></div>
-                    <div class="col"><label>測距 A</label><input type="number" id="l6-da" value="50"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>B點 N</label><input type="number" id="l6-nb" value="1050"></div>
-                    <div class="col"><label>B點 E</label><input type="number" id="l6-eb" value="1050"></div>
-                    <div class="col"><label>測距 B</label><input type="number" id="l6-db" value="50"></div>
-                </div>
-                <div class="input-group">
-                    <label>測站位於 AB 連線方向：</label>
-                    <select id="l6-side"><option value="right">右側 (Right)</option><option value="left">左側 (Left)</option></select>
-                </div>
-                <button class="btn" style="background:var(--c-spatial); color:black;" onclick="l6_calc()">解算測站坐標</button>
-                <div class="result-box" id="l6-res">等待交會...</div>
-            </div>
-        </div>
-
-        <div id="l7" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-geo)">
-                <h3>曲線偏角法生成器</h3>
-                <div class="row">
-                    <div class="col"><label>半徑 R</label><input type="number" id="l7-r" value="200"></div>
-                    <div class="col"><label>交角 I (度)</label><input type="number" id="l7-i" value="60"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>BC 樁號</label><input type="number" id="l7-bc" value="1000"></div>
-                    <div class="col"><label>樁距 (m)</label><input type="number" id="l7-int" value="20"></div>
-                </div>
-                <button class="btn btn-warn" onclick="l7_calc()">生成放樣表</button>
-                <div class="result-box" id="l7-res"></div>
-            </div>
-        </div>
-
-        <div id="l8" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-geo)">
-                <h3>豎曲線高程計算</h3>
-                <div class="row">
-                    <div class="col"><label>PVI 樁號</label><input type="number" id="l8-sta" value="2500"></div>
-                    <div class="col"><label>PVI 高程</label><input type="number" id="l8-elev" value="100"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>g1 (%)</label><input type="number" id="l8-g1" value="2.5"></div>
-                    <div class="col"><label>g2 (%)</label><input type="number" id="l8-g2" value="-1.5"></div>
-                    <div class="col"><label>長度 L</label><input type="number" id="l8-l" value="200"></div>
-                </div>
-                <button class="btn btn-warn" onclick="l8_calc()">計算拋物線高程</button>
-                <div class="result-box" id="l8-res"></div>
-            </div>
-        </div>
-
-        <div id="l9" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-struct)">
-                <h3>預拱度合成計算</h3>
-                <div class="row">
-                    <div class="col"><label>設計高程</label><input type="number" id="l9-h" value="100.000"></div>
-                    <div class="col"><label>預期沉陷 (mm, 負值)</label><input type="number" id="l9-def" value="-45"></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>支撐補償 (mm)</label><input type="number" id="l9-scaf" value="10"></div>
-                    <div class="col"><label>其他 (mm)</label><input type="number" id="l9-oth" value="5"></div>
-                </div>
-                <button class="btn btn-danger" onclick="l9_calc()">計算模版高程</button>
-                <div class="result-box" id="l9-res"></div>
-            </div>
-        </div>
-
-        <div id="l10" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-struct)">
-                <h3>監測戰情室</h3>
-                <div class="row">
-                    <div class="col"><label>警戒值 (mm/day)</label><input type="number" id="l10-alert" value="1.0"></div>
-                    <div class="col"><label>行動值 (mm/day)</label><input type="number" id="l10-action" value="2.0"></div>
-                </div>
-                <div id="l10-inputs"></div>
-                <button class="btn btn-danger" style="margin-top:10px; background:#333;" onclick="l10_addRow()">+ 新增監測日</button>
-                <button class="btn btn-danger" style="margin-top:10px;" onclick="l10_calc()">趨勢診斷</button>
-                <div class="result-box" id="l10-res"></div>
-            </div>
-        </div>
-
-        <div id="l11" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-adv)">
-                <h3>Python 自動化批次處理 (模擬器)</h3>
-                <label>CSV 輸入 (點號, 方位角, 距離)</label>
-                <textarea id="l11-csv" rows="5" style="background:#000; color:#ccc;">TP1, 45.0, 100.0&#10;TP2, 135.0, 50.5&#10;TP3, 0.0, -10</textarea>
-                <button class="btn btn-code" style="margin-top:10px;" onclick="l11_calc()">▶ Run Script</button>
-                <div class="result-box" id="l11-res">> Terminal ready...</div>
-            </div>
-        </div>
-
-        <div id="l12" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-adv)">
-                <h3>LiDAR 降噪模擬</h3>
-                <canvas id="l12-canvas"></canvas>
-                <div class="row" style="margin-top:10px;">
-                    <button class="btn btn-code" onclick="l12_gen()">1. 生成點雲</button>
-                    <button class="btn btn-code" style="margin-left:10px; background:#4d7c0f;" onclick="l12_filter()">2. SOR 濾波</button>
-                </div>
-                <div class="result-box" id="l12-res"></div>
-            </div>
-        </div>
-
-        <div id="l13" class="tool-panel">
-            <div class="card" style="border-top: 3px solid var(--c-adv)">
-                <h3>UAV 土方計算模擬</h3>
-                <div class="row">
-                    <div class="col"><label>堆土平均高 (m)</label><input type="number" id="l13-h" value="3.5" oninput="l13_vis()"></div>
-                    <div class="col"><label>植被雜訊 (%)</label><input type="number" id="l13-noise" value="10"></div>
-                </div>
-                <div style="height: 100px; background:#000; position:relative; border-bottom:2px solid #38bdf8; margin:15px 0; overflow:hidden;" id="l13-vis-box">
-                    <div id="l13-soil" style="position:absolute; bottom:0; width:100%; background:#eab308; transition:all 0.5s;"></div>
-                    <div id="l13-veg" style="position:absolute; bottom:0; width:20%; left:40%; background:repeating-linear-gradient(45deg, #65a30d, #65a30d 10px, #000 10px, #000 20px); opacity:0.7;"></div>
-                </div>
-                <button class="btn btn-code" onclick="l13_calc()">計算淨土方量</button>
-                <div class="result-box" id="l13-res"></div>
-            </div>
-        </div>
-
+    <div class="phase-title"><span class="phase-tag" style="background:var(--phase-5)">PHASE 5</span>結構工程整合</div>
+    <div class="grid">
+        <a href="lesson09.html" class="card p5">
+            <div class="card-header"><span class="lesson-id">LESSON 09</span></div>
+            <h3>預拱度計算</h3>
+            <p>結構撓度、支撐沉陷與模版放樣補償。</p>
+            <div class="tools"><span class="tool-tag">預拱合成計算器</span></div>
+        </a>
+        <a href="lesson10.html" class="card p5">
+            <div class="card-header"><span class="lesson-id">LESSON 10</span></div>
+            <h3>變位監測系統</h3>
+            <p>沉陷速率分析、加速度趨勢與安全警報。</p>
+            <div class="tools"><span class="tool-tag">智慧監測戰情室</span></div>
+        </a>
+        <a href="lesson11.html" class="card p5">
+            <div class="card-header"><span class="lesson-id">LESSON 11</span></div>
+            <h3>Python 自動化</h3>
+            <p>數據批次處理與正規表示法 (Regex) 應用。</p>
+            <div class="tools"><span class="tool-tag">Python IDE</span></div>
+        </a>
+        <a href="lesson12.html" class="card p5">
+            <div class="card-header"><span class="lesson-id">LESSON 12</span></div>
+            <h3>3D 逆向工程</h3>
+            <p>點雲降噪 (SOR) 與體素降採樣。</p>
+            <div class="tools"><span class="tool-tag">點雲濾波器</span></div>
+        </a>
+        <a href="lesson13.html" class="card p5">
+            <div class="card-header"><span class="lesson-id">LESSON 13</span></div>
+            <h3>無人機航測 (UAV)</h3>
+            <p>SfM 原理、DSM/DTM 與土方計算。</p>
+            <div class="tools"><span class="tool-tag">土方計算模擬</span></div>
+        </a>
     </div>
 </main>
-
-<script>
-    // --- Global Logic ---
-    function updateTime() {
-        const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {hour12: false});
-    }
-    setInterval(updateTime, 1000);
-    updateTime();
-
-    function switchTool(id, el) {
-        // Hide all panels
-        document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
-        // Show selected
-        document.getElementById(id).classList.add('active');
-        // Update Title
-        document.getElementById('page-title').innerText = el.innerText;
-        // Update Sidebar Active
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
-        
-        // Init logic for visualizers if needed
-        if(id === 'l12') l12_gen();
-        if(id === 'l13') l13_vis();
-    }
-
-    // --- L1 Logic ---
-    function l1_addRow() {
-        const div = document.createElement('div');
-        div.className = 'row';
-        div.innerHTML = `<div class="col"><input type="number" class="l1-val" placeholder="觀測值"></div><div class="col"><input type="number" class="l1-w" value="1" placeholder="權重"></div>`;
-        document.getElementById('l1-inputs').appendChild(div);
-    }
-    l1_addRow(); l1_addRow(); // Init 2 rows
-
-    function l1_calc() {
-        const vals = document.querySelectorAll('.l1-val');
-        const ws = document.querySelectorAll('.l1-w');
-        let sumPW = 0, sumP = 0, data = [];
-        
-        for(let i=0; i<vals.length; i++) {
-            let v = parseFloat(vals[i].value), w = parseFloat(ws[i].value);
-            if(!isNaN(v) && !isNaN(w)) {
-                data.push({v, w});
-                sumPW += v * w;
-                sumP += w;
-            }
-        }
-        if(sumP === 0) return;
-        let mean = sumPW / sumP;
-        let sumPV2 = data.reduce((acc, d) => acc + d.w * Math.pow(d.v - mean, 2), 0);
-        let sigma0 = Math.sqrt(sumPV2 / (data.length - 1));
-        
-        document.getElementById('l1-res').innerHTML = 
-            `加權平均: ${mean.toFixed(4)}\n單位權中誤差: ±${sigma0.toFixed(4)}`;
-    }
-
-    // --- L2 Logic ---
-    function l2_calc() {
-        const n1 = parseFloat(document.getElementById('l2-n1').value);
-        const e1 = parseFloat(document.getElementById('l2-e1').value);
-        const n2 = parseFloat(document.getElementById('l2-n2').value);
-        const e2 = parseFloat(document.getElementById('l2-e2').value);
-        
-        let dn = n2 - n1, de = e2 - e1;
-        let dist = Math.sqrt(dn*dn + de*de);
-        let deg = Math.atan2(de, dn) * (180/Math.PI);
-        if(deg < 0) deg += 360;
-        
-        let d = Math.floor(deg);
-        let m = Math.floor((deg-d)*60);
-        let s = ((deg-d-m/60)*3600).toFixed(1);
-
-        document.getElementById('l2-res').innerText = 
-            `距離: ${dist.toFixed(3)} m\n方位角: ${d}°${m}'${s}"`;
-    }
-
-    // --- L3 Logic ---
-    function l3_calc() {
-        const a1 = parseFloat(document.getElementById('l3-a1').value);
-        const b1 = parseFloat(document.getElementById('l3-b1').value);
-        const a2 = parseFloat(document.getElementById('l3-a2').value);
-        const b2 = parseFloat(document.getElementById('l3-b2').value);
-        
-        let trueDH = a1 - b1;
-        let expectedA2 = b2 + trueDH;
-        let err = (a2 - expectedA2) * 1000;
-        
-        let status = Math.abs(err) < 3 ? "合格 (PASS)" : "不合格 (FAIL)";
-        let color = Math.abs(err) < 3 ? "#4ade80" : "#ef4444";
-        
-        document.getElementById('l3-res').innerHTML = 
-            `真高程差: ${trueDH.toFixed(4)}m\n誤差: ${err.toFixed(1)}mm\n判定: <span style="color:${color}">${status}</span>`;
-    }
-
-    // --- L4 Logic ---
-    function l4_addRow() {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>TP</td><td><input type="number" class="l4-dh"></td><td><input type="number" class="l4-dist"></td><td><button onclick="this.parentElement.parentElement.remove()">X</button></td>`;
-        document.querySelector('#l4-table tbody').appendChild(tr);
-    }
-    l4_addRow(); l4_addRow();
-
-    function l4_calc() {
-        let dhs = document.querySelectorAll('.l4-dh');
-        let dists = document.querySelectorAll('.l4-dist');
-        let startH = parseFloat(document.getElementById('l4-startH').value);
-        let endH = parseFloat(document.getElementById('l4-endH').value);
-        
-        let sumDH = 0, sumDist = 0;
-        dhs.forEach((el, i) => {
-            let v = parseFloat(el.value), d = parseFloat(dists[i].value);
-            if(!isNaN(v)) sumDH += v;
-            if(!isNaN(d)) sumDist += d;
-        });
-
-        let theoryDH = endH - startH;
-        let fh = (sumDH - theoryDH) * 1000; // mm
-        let tol = 12 * Math.sqrt(sumDist/1000);
-        
-        let status = Math.abs(fh) <= tol ? "合格" : "不合格";
-        let color = Math.abs(fh) <= tol ? "#4ade80" : "#ef4444";
-
-        document.getElementById('l4-res').innerHTML = 
-            `閉合差: ${fh.toFixed(1)} mm\n容許值: ±${tol.toFixed(1)} mm\n結果: <span style="color:${color}">${status}</span>`;
-    }
-
-    // --- L5 Logic ---
-    function l5_calc() {
-        const S = parseFloat(document.getElementById('l5-s').value);
-        const Z_val = parseFloat(document.getElementById('l5-z').value); // D.MMSS
-        const i = parseFloat(document.getElementById('l5-i').value);
-        const z = parseFloat(document.getElementById('l5-t').value);
-        const Ha = parseFloat(document.getElementById('l5-ha').value);
-
-        let deg = Math.floor(Z_val);
-        let min = Math.floor((Z_val - deg) * 100);
-        let sec = ((Z_val - deg) * 100 - min) * 100;
-        let Z_rad = (deg + min/60 + sec/3600) * Math.PI / 180;
-
-        let HD = S * Math.sin(Z_rad);
-        let V = S * Math.cos(Z_rad);
-        let CR = (1 - 0.13) * Math.pow(HD, 2) / (2 * 6371000); // Earth R
-        let dH = V + CR + i - z;
-        let Hb = Ha + dH;
-
-        document.getElementById('l5-res').innerText = 
-            `水平距: ${HD.toFixed(3)}m\n球氣差: +${CR.toFixed(4)}m\n高程差: ${(dH>0?"+":"")+dH.toFixed(3)}m\n目標高: ${Hb.toFixed(3)}m`;
-    }
-
-    // --- L6 Logic ---
-    function l6_calc() {
-        // Simplified Logic from L6 lesson
-        const nA = parseFloat(document.getElementById('l6-na').value);
-        const eA = parseFloat(document.getElementById('l6-ea').value);
-        const dA = parseFloat(document.getElementById('l6-da').value);
-        const nB = parseFloat(document.getElementById('l6-nb').value);
-        const eB = parseFloat(document.getElementById('l6-eb').value);
-        const dB = parseFloat(document.getElementById('l6-db').value);
-        const side = document.getElementById('l6-side').value;
-
-        let dn = nB - nA, de = eB - eA;
-        let distAB = Math.sqrt(dn*dn + de*de);
-        let azAB = Math.atan2(de, dn);
-        if (azAB < 0) azAB += 2 * Math.PI;
-
-        // Cosine Law
-        let cosA = (dA*dA + distAB*distAB - dB*dB) / (2 * dA * distAB);
-        if (cosA > 1 || cosA < -1) {
-            document.getElementById('l6-res').innerHTML = "<span style='color:red'>無解：距離無法構成三角形</span>";
-            return;
-        }
-        let angA = Math.acos(cosA);
-        let azAP = (side === 'right') ? azAB + angA : azAB - angA;
-
-        let nP = nA + dA * Math.cos(azAP);
-        let eP = eA + dA * Math.sin(azAP);
-
-        document.getElementById('l6-res').innerHTML = 
-            `測站 N: ${nP.toFixed(4)}\n測站 E: ${eP.toFixed(4)}`;
-    }
-
-    // --- L7 Logic ---
-    function l7_calc() {
-        const R = parseFloat(document.getElementById('l7-r').value);
-        const I = parseFloat(document.getElementById('l7-i').value);
-        const BC = parseFloat(document.getElementById('l7-bc').value);
-        const interval = parseFloat(document.getElementById('l7-int').value);
-
-        let I_rad = I * Math.PI / 180;
-        let L = R * I_rad;
-        let T = R * Math.tan(I_rad/2);
-        
-        let output = `T: ${T.toFixed(3)}m, L: ${L.toFixed(3)}m\n\n樁號\t\t弧長\t偏角\n----------------------------\n`;
-        
-        let curr = Math.ceil(BC/interval)*interval;
-        if(curr <= BC) curr += interval;
-        let EC = BC + L;
-
-        let pts = [BC];
-        while(curr < EC) { pts.push(curr); curr += interval; }
-        pts.push(EC);
-
-        pts.forEach(sta => {
-            let l = sta - BC;
-            let delta = (l / (2*R)) * (180/Math.PI);
-            output += `${sta.toFixed(2)}\t${l.toFixed(2)}\t${delta.toFixed(4)}°\n`;
-        });
-
-        document.getElementById('l7-res').innerText = output;
-    }
-
-    // --- L8 Logic ---
-    function l8_calc() {
-        const staV = parseFloat(document.getElementById('l8-sta').value);
-        const elevV = parseFloat(document.getElementById('l8-elev').value);
-        const g1 = parseFloat(document.getElementById('l8-g1').value)/100;
-        const g2 = parseFloat(document.getElementById('l8-g2').value)/100;
-        const L = parseFloat(document.getElementById('l8-l').value);
-
-        let r = (g2 - g1) / L;
-        let bvcSta = staV - L/2;
-        let bvcElev = elevV - g1 * (L/2);
-        let x_vertex = -g1 / r;
-        
-        let res = `BVC: ${bvcSta}\nEVC: ${bvcSta+L}\n極值點距BVC: ${x_vertex.toFixed(2)}m\n`;
-        
-        if(x_vertex > 0 && x_vertex < L) {
-            let y = bvcElev + g1 * x_vertex + (r/2)*x_vertex*x_vertex;
-            res += `極值高程: ${y.toFixed(4)}m`;
-        }
-        document.getElementById('l8-res').innerText = res;
-    }
-
-    // --- L9 Logic ---
-    function l9_calc() {
-        let h = parseFloat(document.getElementById('l9-h').value);
-        let def = parseFloat(document.getElementById('l9-def').value);
-        let scaf = parseFloat(document.getElementById('l9-scaf').value);
-        let oth = parseFloat(document.getElementById('l9-oth').value);
-
-        let camber = -def + scaf + oth; // def is negative
-        let target = h + camber/1000;
-
-        document.getElementById('l9-res').innerHTML = 
-            `總預拱量: <span style="color:#eab308">+${camber.toFixed(1)} mm</span>\n模版高程: ${target.toFixed(4)} m`;
-    }
-
-    // --- L10 Logic ---
-    function l10_addRow() {
-        let div = document.createElement('div');
-        div.className = 'row';
-        div.innerHTML = `<div class="col"><input type="number" class="l10-d" placeholder="Day"></div><div class="col"><input type="number" class="l10-v" placeholder="Elev"></div>`;
-        document.getElementById('l10-inputs').appendChild(div);
-    }
-    l10_addRow(); l10_addRow();
-
-    function l10_calc() {
-        let ds = document.querySelectorAll('.l10-d');
-        let vs = document.querySelectorAll('.l10-v');
-        let alertVal = parseFloat(document.getElementById('l10-alert').value);
-        
-        let data = [];
-        ds.forEach((d, i) => {
-            let t = parseFloat(d.value), h = parseFloat(vs[i].value);
-            if(!isNaN(t)) data.push({t, h});
-        });
-        data.sort((a,b) => a.t - b.t);
-
-        if(data.length < 2) return;
-        let last = data[data.length-1], prev = data[data.length-2];
-        let vel = Math.abs(last.h - prev.h) / (last.t - prev.t); // mm/day (assuming h in mm or conversion needed, simplified here)
-        
-        // Assume input is mm for simplicity in this combined tool
-        let status = vel > alertVal ? "WARNING" : "SAFE";
-        let color = vel > alertVal ? "#ef4444" : "#4ade80";
-        
-        document.getElementById('l10-res').innerHTML = 
-            `當前速率: ${vel.toFixed(2)} mm/day\n狀態: <span style="color:${color}">${status}</span>`;
-    }
-
-    // --- L11 Logic ---
-    function l11_calc() {
-        let txt = document.getElementById('l11-csv').value;
-        let lines = txt.split('\n');
-        let out = "ID\tN\tE\n---\t---\t---\n";
-        lines.forEach(l => {
-            let p = l.split(',');
-            if(p.length >= 3) {
-                let dist = parseFloat(p[2]);
-                if(dist <= 0) return; // filter
-                let rad = parseFloat(p[1]) * Math.PI/180;
-                let n = dist * Math.cos(rad);
-                let e = dist * Math.sin(rad);
-                out += `${p[0]}\t${n.toFixed(1)}\t${e.toFixed(1)}\n`;
-            }
-        });
-        document.getElementById('l11-res').innerText = out;
-    }
-
-    // --- L12 Logic ---
-    let l12pts = [];
-    function l12_gen() {
-        const cvs = document.getElementById('l12-canvas');
-        const ctx = cvs.getContext('2d');
-        cvs.width = cvs.offsetWidth; cvs.height = 300;
-        l12pts = [];
-        // Structure
-        for(let i=0; i<300; i++) l12pts.push({x: 100+Math.random()*50, y: 50+Math.random()*200, type: 1});
-        // Noise
-        for(let i=0; i<100; i++) l12pts.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, type: 0});
-        l12_draw();
-        document.getElementById('l12-res').innerText = `原始點數: ${l12pts.length}`;
-    }
-    function l12_draw() {
-        const ctx = document.getElementById('l12-canvas').getContext('2d');
-        ctx.fillStyle = "black"; ctx.fillRect(0,0,1000,300);
-        l12pts.forEach(p => {
-            ctx.fillStyle = p.keep === false ? "red" : "#a3e635";
-            ctx.fillRect(p.x, p.y, 2, 2);
-        });
-    }
-    function l12_filter() {
-        let count = 0;
-        l12pts.forEach(p => {
-            // Simple logic: if type is 0 (noise), mark remove
-            // In real logic this is distance based
-            if(p.type === 0) p.keep = false;
-            else { p.keep = true; count++; }
-        });
-        l12_draw();
-        document.getElementById('l12-res').innerText = `降噪後點數: ${count} (Removed ${l12pts.length - count})`;
-    }
-
-    // --- L13 Logic ---
-    function l13_vis() {
-        let h = parseFloat(document.getElementById('l13-h').value) * 10;
-        document.getElementById('l13-soil').style.height = h + 'px';
-        document.getElementById('l13-veg').style.height = (h+20) + 'px';
-    }
-    function l13_calc() {
-        let h = parseFloat(document.getElementById('l13-h').value);
-        let noise = parseFloat(document.getElementById('l13-noise').value);
-        let area = 10000; 
-        
-        let rawVol = area * h + (area * noise/100 * 1.5);
-        let netVol = area * h;
-        
-        document.getElementById('l13-res').innerHTML = 
-            `Raw DSM Vol: ${rawVol.toFixed(0)} m³\nNet Vol: ${netVol.toFixed(0)} m³\n誤差: ${((rawVol-netVol)/netVol*100).toFixed(1)}%`;
-    }
-
-</script>
+<footer><p>&copy; 2026 Bridge Engineering Expert System.</p></footer>
 </body>
 </html>
