@@ -343,6 +343,30 @@
         document.getElementById('res-scale').innerText = k.toFixed(6);
     }
 </script>
+<!-- NAV SCRIPT START -->
+<script>
+(function(){
+    // 自動生成導覽按鈕
+    const total=13; // 總課數
+    const page=location.pathname.split("/").pop();
+    const num=parseInt(page.match(/lesson(\d+)\.html/i)?.[1]||0);
+    if(!num)return;
+    
+    const prev=num>1?`lesson${String(num-1).padStart(2,'0')}.html`:'index.html';
+    const next=num<total?`lesson${String(num+1).padStart(2,'0')}.html`:'#';
+    const bg='#0f172a'; const color='white';
 
+    const div=document.createElement('div');
+    div.style.cssText="position:fixed;bottom:20px;right:20px;display:flex;gap:10px;z-index:9999;font-family:Consolas,monospace;";
+    div.innerHTML=`
+        <a href="${prev}" style="background:${bg};color:${color};padding:10px 20px;text-decoration:none;border-radius:30px;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-weight:bold;">← PREV</a>
+        <a href="index.html" style="background:${bg};color:${color};padding:10px 20px;text-decoration:none;border-radius:30px;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-weight:bold;">MENU</a>
+        <a href="${next}" style="background:${bg};color:${color};padding:10px 20px;text-decoration:none;border-radius:30px;box-shadow:0 4px 10px rgba(0,0,0,0.3);font-weight:bold;opacity:${num>=total?0.5:1};pointer-events:${num>=total?'none':'auto'}">NEXT →</a>
+    `;
+    document.body.appendChild(div);
+})();
+</script>
+<!-- NAV SCRIPT END -->
 </body>
+
 </html>
