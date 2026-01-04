@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 12: 點雲的雕刻師——3D 逆向工程 (LiDAR)</title>
+    <style>
+        :root {
+            --bg-theory: #ecfccb; /* 螢光綠背景，象徵雷射 */
+            --bg-field: #fffaf0;
+            --bg-tool: #000000; /* 全黑畫布 */
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-laser: #65a30d; /* 雷射綠 */
+            --accent-code: #a3e635; /* 程式碼高亮 */
+            --border-color: #cbd5e1;
+            --tech-font: 'Fira Code', 'Consolas', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-laser);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-laser); color: #365314; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: #b45309; color: #b45309; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #333;
+        }
+        .tool-panel h2 { color: var(--accent-code); text-transform: uppercase; letter-spacing: 2px; }
+
+        /* Python Code Block */
+        .code-block {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: var(--tech-font);
+            font-size: 14px;
+            color: #d4d4d4;
+            border: 1px solid #444;
+            margin-bottom: 20px;
+        }
+        .kw { color: #569cd6; } /* keyword */
+        .fn { color: #dcdcaa; } /* function */
+        .str { color: #ce9178; } /* string */
+        .com { color: #6a9955; } /* comment */
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Canvas Simulator */
+        canvas {
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .controls {
+            display: flex; gap: 10px; margin-top: 15px;
+        }
+        
+        .btn {
+            background: #3f6212;
+            color: white; border: none; padding: 10px 15px;
+            font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            font-family: var(--tech-font); flex: 1;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #4d7c0f; }
+        .btn-reset { background: #333; }
+        
+        .stat-display {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;
+            font-family: var(--tech-font); font-size: 14px; color: #aaa;
+        }
+        .stat-val { color: var(--accent-code); font-weight: bold; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 12: 點雲的雕刻師 — 3D 逆向工程</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Masters Program: 電腦看見的不是橋，是一團數百萬個漂浮在空中的座標點。你必須賦予它們意義。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🐝 直觀譬喻：蜜蜂群與雕像</h2>
+        <p>想像一座隱形的橋樑，上面停滿了密密麻麻的螢火蟲（點雲 Point Cloud）。
+        <br>在黑暗中，你依稀看得出橋的形狀。但如果你仔細看，會有幾隻螢火蟲在橋外亂飛（雜訊 Noise），還有些地方因為太亮而看不清（密度過高）。</p>
+        <p><strong>逆向工程 (Reverse Engineering) 的過程：</strong>
+        <br>1. <strong>趕走亂飛的蟲：</strong> 統計離群值移除 (Statistical Outlier Removal)。
+        <br>2. <strong>讓蟲排隊整齊：</strong> 體素降採樣 (Voxel Downsampling)。
+        <br>3. <strong>用布把蟲包起來：</strong> 曲面重建 (Surface Reconstruction / Meshing)，這時它才真正變成一個實體的「面」。</p>
+
+        <h2>🧊 視覺圖解：KD-Tree 與體素 (Voxel)</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <rect width="40" height="40" fill="none" stroke="#e2e8f0"/>
+                    </pattern>
+                </defs>
+                <rect x="50" y="50" width="320" height="200" fill="url(#grid)" stroke="#333"/>
+                <text x="210" y="280" font-size="14" text-anchor="middle">體素網格 (Voxel Grid)</text>
+
+                <g id="points">
+                    <circle cx="90" cy="90" r="3" fill="#65a30d"/>
+                    <circle cx="95" cy="92" r="3" fill="#65a30d"/>
+                    <circle cx="88" cy="95" r="3" fill="#65a30d"/>
+                    <circle cx="92" cy="88" r="3" fill="#65a30d"/>
+                    <circle cx="210" cy="150" r="3" fill="#65a30d"/>
+                    <circle cx="215" cy="155" r="3" fill="#65a30d"/>
+                </g>
+
+                <path d="M 400 150 L 480 150" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+                <rect x="500" y="50" width="200" height="200" fill="none" stroke="#333"/>
+                <rect x="500" y="50" width="200" height="200" fill="url(#grid)" opacity="0.5"/>
+                
+                <circle cx="525" cy="75" r="6" fill="#365314"/> <text x="600" y="150" text-anchor="middle" fill="#666">降採樣後 (Downsampled)</text>
+                <text x="600" y="170" text-anchor="middle" fill="#666" font-size="12">每格只留一個重心點</text>
+
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+                    </marker>
+                </defs>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：為了處理數億個點，我們用「體素」將空間方格化。在同一個格子裡的一百個點，最後合併成一個「重心點」，大幅減少運算量。</p>
+        </div>
+
+        <h2>🧮 硬核理論：法向量 (Normal Vector)</h2>
+        <p>點雲只是一堆 $(x, y, z)$ 坐標，它不知道哪邊是「外面」。
+        <br>在進行曲面重建（把點連成面）之前，我們必須計算每個點的<strong>法向量</strong>。</p>
+        <p><strong>原理：</strong>
+        <br>1. 找出某點 $P$ 附近的 $k$ 個鄰居。
+        <br>2. 擬合一個「最佳平面」(PCA - 主成分分析)。
+        <br>3. 這個平面的垂直方向，就是法向量 $\vec{n}$。</p>
+        <p><strong>陷阱：</strong> 如果法向量方向算反了（指向物體內部），重建出來的模型會變成黑色的破洞。這在橋墩背面或涵洞內部最常發生。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：掃描的死角</h2>
+            
+            <h3>1. 濕地與黑洞</h3>
+            <p>光達是靠雷射反射。
+            <br>● <strong>積水路面：</strong> 像鏡子一樣把雷射彈走（鏡面反射），儀器收不到回波，數據會出現「破洞」。
+            <br>● <strong>新鋪柏油：</strong> 黑色吸光率極高，掃描距離會大打折扣。
+            <br><strong>解法：</strong> 下雨天絕對不掃。遇到黑色物體，增加掃描密度或貼上高反射標靶。</p>
+
+            <h3>2. 拼接 (Registration) 的悲劇</h3>
+            <p>你在橋頭掃一站，橋尾掃一站，回去怎麼接起來？
+            <br>軟體雖然有「雲對雲自動拼接」(Cloud-to-Cloud)，但前提是兩站之間要有 <strong>30%~50% 的重疊率</strong>。
+            <br><strong>老鳥技巧：</strong> 在兩站重疊處放置「標靶球 (Spheres)」。這是絕對控制點，比軟體自動運算可靠一百倍。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🐍 Python 實戰：Open3D 降噪腳本</h2>
+            <div class="code-block">
+<span class="kw">import</span> open3d <span class="kw">as</span> o3d
+
+<span class="kw">def</span> <span class="fn">process_point_cloud</span>(filename):
+    <span class="com"># 1. 讀取點雲</span>
+    pcd = o3d.io.read_point_cloud(filename)
+    <span class="fn">print</span>(<span class="str">f"原始點數: {len(pcd.points)}"</span>)
+
+    <span class="com"># 2. 體素降採樣 (Voxel Downsample)</span>
+    <span class="com"># 每 5cm 一格，大幅瘦身</span>
+    downpcd = pcd.voxel_down_sample(voxel_size=<span class="str">0.05</span>)
+
+    <span class="com"># 3. 統計離群值移除 (SOR Denoise)</span>
+    <span class="com"># 計算每個點與鄰居的平均距離，超過 2倍標準差者視為雜訊</span>
+    cl, ind = downpcd.remove_statistical_outlier(nb_neighbors=<span class="str">20</span>, std_ratio=<span class="str">2.0</span>)
+    
+    clean_pcd = downpcd.select_by_index(ind)
+    
+    <span class="com"># 4. 計算法向量</span>
+    clean_pcd.estimate_normals()
+
+    <span class="kw">return</span> clean_pcd
+            </div>
+
+            <h2>🧹 互動模擬：雜訊濾波器 (SOR Simulator)</h2>
+            <p style="font-size:14px; color:#aaa; margin-bottom:10px;">點擊「生成點雲」產生橋墩與雜訊，再點擊「執行濾波」觀察 SOR 演算法如何運作。</p>
+            
+            <canvas id="lidarCanvas" width="400" height="300"></canvas>
+            
+            <div class="stat-display">
+                <div>原始點數: <span id="count-raw" class="stat-val">0</span></div>
+                <div>剩餘點數: <span id="count-clean" class="stat-val">--</span></div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-reset" onclick="generateCloud()">1. 生成原始點雲</button>
+                <button class="btn" onclick="applySOR()">2. 執行 SOR 濾波</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('lidarCanvas');
+    const ctx = canvas.getContext('2d');
+    let points = [];
+
+    // 生成模擬數據
+    function generateCloud() {
+        points = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. 生成 "橋墩" (密集結構)
+        for (let i = 0; i < 600; i++) {
+            // 橋柱主體
+            let x = 180 + Math.random() * 40;
+            let y = 50 + Math.random() * 200;
+            points.push({x: x, y: y, type: 'structure', keep: true});
+        }
+        
+        // 橋帽
+        for (let i = 0; i < 300; i++) {
+            let x = 100 + Math.random() * 200;
+            let y = 30 + Math.random() * 30;
+            points.push({x: x, y: y, type: 'structure', keep: true});
+        }
+
+        // 2. 生成 "雜訊" (鳥、灰塵、樹葉)
+        for (let i = 0; i < 150; i++) {
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            points.push({x: x, y: y, type: 'noise', keep: true});
+        }
+
+        document.getElementById('count-raw').innerText = points.length;
+        document.getElementById('count-clean').innerText = "--";
+        drawPoints();
+    }
+
+    function drawPoints() {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        points.forEach(p => {
+            if (!p.keep) {
+                ctx.fillStyle = '#ef4444'; // 被剔除的點 (紅)
+            } else {
+                ctx.fillStyle = '#a3e635'; // 保留的點 (綠)
+            }
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    // 模擬 SOR (Statistical Outlier Removal) 演算法
+    function applySOR() {
+        if (points.length === 0) return;
+
+        // 簡單模擬：計算每個點到最近鄰居的距離
+        // 真實算法會計算 k-NN 平均距離並建立高斯分佈
+        
+        let distances = [];
+
+        // 1. 計算距離場
+        points.forEach((p, idx) => {
+            let minDirectDist = 9999;
+            points.forEach((other, otherIdx) => {
+                if (idx === otherIdx) return;
+                let dx = p.x - other.x;
+                let dy = p.y - other.y;
+                let d = Math.sqrt(dx*dx + dy*dy);
+                if (d < minDirectDist) minDirectDist = d;
+            });
+            p.dist = minDirectDist;
+            distances.push(minDirectDist);
+        });
+
+        // 2. 計算平均值與標準差
+        let sum = distances.reduce((a, b) => a + b, 0);
+        let mean = sum / distances.length;
+        
+        // 設定閾值 (模擬 2倍標準差)
+        // 這裡為了視覺效果，直接設定一個經驗值
+        // 密集區的點距離通常 < 5px，雜訊通常 > 10px
+        let threshold = 10; 
+
+        // 3. 標記移除
+        let cleanCount = 0;
+        points.forEach(p => {
+            if (p.dist > threshold) {
+                p.keep = false;
+            } else {
+                p.keep = true;
+                cleanCount++;
+            }
+        });
+
+        document.getElementById('count-clean').innerText = cleanCount;
+        drawPoints();
+        
+        // 動畫顯示過濾過程
+        setTimeout(() => {
+            // 只重繪綠點
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            points.forEach(p => {
+                if (p.keep) {
+                    ctx.fillStyle = '#a3e635';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            // 加上文字
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Consolas';
+            ctx.fillText(`Filter Complete. Noise Removed.`, 10, 20);
+        }, 1000);
+    }
+
+    // Init
+    generateCloud();
+</script>
+
+</body>
+</html>

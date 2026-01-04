@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 02: 描述世界的語言——坐標系統與幾何</title>
+    <style>
+        :root {
+            --bg-theory: #f0f9ff;
+            --bg-field: #fffaf0;
+            --bg-tool: #1a202c;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-blue: #0ea5e9;
+            --accent-orange: #f97316;
+            --border-color: #cbd5e1;
+            --grid-line: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-orange); /* Lesson 2 用橙色區分 */
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        h3 { font-size: 24px; margin-top: 1rem; color: #475569; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄樣式 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-blue); color: #0369a1; }
+
+        /* 右欄樣式 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-orange); color: #c2410c; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 20px;
+        }
+        .tool-panel h2 { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+        /* SVG 樣式 */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-blue);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入與按鈕 */
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-size: 16px; margin-bottom: 5px; color: #cbd5e1; }
+        input[type="number"] {
+            width: 100%; padding: 12px; background: #334155; border: 1px solid #475569;
+            color: white; border-radius: 6px; font-size: 18px; font-family: 'Consolas', monospace;
+        }
+        input:focus { outline: 2px solid var(--accent-blue); border-color: transparent; }
+
+        .btn {
+            background: var(--accent-blue); color: white; border: none; padding: 15px;
+            font-size: 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #0284c7; }
+
+        /* 結果顯示區 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .result-cell {
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        .result-label { display: block; font-size: 14px; color: #94a3b8; }
+        .result-val { font-size: 24px; color: var(--accent-orange); font-family: 'Consolas', monospace; font-weight: bold; }
+        .unit { font-size: 16px; color: #64748b; margin-left: 5px; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 02: 描述世界的語言 — 坐標系統與幾何</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 地球是圓的，圖紙是平的。理解這個矛盾，你才能看穿「距離」的謊言。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🍊 直觀譬喻：橘子皮難題</h2>
+        <p>請想像你在剝橘子。如果你想把一整塊橘子皮「完美地」壓平在桌上，會發生什麼事？</p>
+        <p>它一定會<strong>裂開</strong>，或者你必須強行<strong>拉伸</strong>它。這就是大地測量的永恆困境：<strong>無法在不造成變形的情況下，將球體展開成平面。</strong></p>
+        <p>台灣使用的 <strong>TWD97</strong> 系統，就像是用一個圓柱體套住地球（橘子），然後將影像投影上去。為了減少變形，我們讓圓柱體「切入」地球內部，這就是為什麼會有「尺度係數」(Scale Factor) 的原因。</p>
+
+        <h2>🌐 視覺圖解：橫麥卡托投影 (TM2)</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect width="800" height="350" fill="url(#grid)" />
+
+                <circle cx="200" cy="175" r="100" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2" />
+                <path d="M 200 75 A 30 100 0 0 1 200 275" fill="none" stroke="#0ea5e9" stroke-dasharray="4"/> <path d="M 100 175 Q 200 220 300 175" fill="none" stroke="#0ea5e9" opacity="0.5"/> <line x1="180" y1="50" x2="180" y2="300" stroke="#f97316" stroke-width="3"/>
+                <line x1="220" y1="50" x2="220" y2="300" stroke="#f97316" stroke-width="3"/>
+                <text x="200" y="320" font-size="14" text-anchor="middle" fill="#666">割圓柱 (Secant)</text>
+
+                <g transform="translate(450, 50)">
+                    <rect x="0" y="0" width="300" height="250" fill="white" stroke="#cbd5e1" rx="10"/>
+                    <text x="150" y="30" font-size="18" text-anchor="middle" font-weight="bold">尺度係數 (Scale Factor) k</text>
+                    
+                    <path d="M 50 150 Q 150 200 250 150" fill="none" stroke="#333" stroke-width="2"/>
+                    <line x1="50" y1="150" x2="250" y2="150" stroke="#ef4444" stroke-width="2" stroke-dasharray="5"/>
+                    <text x="260" y="155" font-size="14" fill="#ef4444">k=1 (標準線)</text>
+
+                    <line x1="150" y1="80" x2="150" y2="220" stroke="#0ea5e9" stroke-width="2"/>
+                    <text x="150" y="240" font-size="14" text-anchor="middle" fill="#0ea5e9">中央經線 121°E</text>
+                    <text x="150" y="190" font-size="16" text-anchor="middle" fill="#f97316" font-weight="bold">k = 0.9999</text>
+
+                    <text x="50" y="140" font-size="14" text-anchor="middle">切線 (k=1)</text>
+                    <text x="250" y="140" font-size="14" text-anchor="middle">切線 (k=1)</text>
+                    <text x="150" y="70" font-size="12" fill="#666" text-anchor="middle">距離中央經線約 90km 處 k=1</text>
+                </g>
+                
+                <path d="M 220 175 L 450 175" stroke="#cbd5e1" stroke-dasharray="5" />
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：在中央經線 (121°E)，投影面切入地球內部，距離被「縮短」了，所以 k < 1。</p>
+        </div>
+
+        <h2>📐 硬核理論：為什麼是 0.9999？</h2>
+        <p>在 TWD97 (TM2) 系統中，為了平衡整個投影帶（跨度 2 度）的變形，我們人為規定中央經線的尺度係數 $k_0 = 0.9999$。</p>
+        
+        <div class="math-card">
+            S_{grid} = S_{ground} \times k
+        </div>
+        
+        <p>這意味著：在中央經線（約南投、高雄市區），如果您在地面上量測了 1000 公尺，在圖紙上（坐標反算）只會得到 999.9 公尺。</p>
+        <p><strong>這 10 公分的差異去哪了？</strong><br>
+        它消失在投影的數學壓縮中。如果您在做高鐵或長跨距橋樑，這 1/10,000 的誤差如果不修正，最後橋樑合龍時就會發生「硬把橘子皮拉破」的慘劇。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：坐標的陷阱</h2>
+            
+            <h3>1. 真北 (TN) vs. 格北 (GN)</h3>
+            <p>圖紙上的上面是「北」，但那是<strong>格北 (Grid North)</strong>，也就是 Y 軸的方向。而你的羅盤指的也不是<strong>真北 (True North)</strong>，是磁北。<br>
+            在測量放樣時，我們只認「坐標方位角」，也就是相對於格北的角度。切記：<strong>全站儀設站時，必須依據已知點坐標定向</strong>，千萬別拿指北針來定方位！</p>
+
+            <h3>2. TWD67 與 TWD97 的幽靈</h3>
+            <p>台灣有兩個坐標系統並存。
+            <br>TWD97 是新系統（基於 GRS80 橢球）。
+            <br>TWD67 是舊系統（基於 Hu-Tzu-Shan 1967）。
+            <br><strong>兩者相差約 800 公尺！</strong> 如果你發現放樣點位跑到馬路對面或海裡，第一件事先檢查：是不是拿到舊圖了？</p>
+            <blockquote>
+                <strong>判斷口訣：</strong>
+                雖然數值很像，但通常 TWD97 的坐標值會比 TWD67 大一些（視地區而定，無絕對公式，必須透過轉換程式）。最保險的方式：<strong>找一個已知控制點核對坐標</strong>。
+            </blockquote>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🧭 互動工具：TWD97 坐標反算大師</h2>
+            <p>輸入兩點坐標 (N, E)，計算精確的方位角與平面距離。</p>
+            
+            <h3 style="color:var(--accent-blue); font-size:18px; margin-bottom:10px;">測站點 A (Start Point)</h3>
+            <div class="input-row">
+                <div>
+                    <label>N (北/縱坐標)</label>
+                    <input type="number" id="n1" placeholder="27xxxxxx" value="2685210.550">
+                </div>
+                <div>
+                    <label>E (東/橫坐標)</label>
+                    <input type="number" id="e1" placeholder="2xxxxxx" value="215430.220">
+                </div>
+            </div>
+
+            <h3 style="color:var(--accent-orange); font-size:18px; margin-bottom:10px;">後視/放樣點 B (Target Point)</h3>
+            <div class="input-row">
+                <div>
+                    <label>N (北/縱坐標)</label>
+                    <input type="number" id="n2" placeholder="27xxxxxx" value="2685350.120">
+                </div>
+                <div>
+                    <label>E (東/橫坐標)</label>
+                    <input type="number" id="e2" placeholder="2xxxxxx" value="215580.450">
+                </div>
+            </div>
+
+            <button class="btn" onclick="calculateInverse()">🚀 計算方位角與距離</button>
+
+            <div class="result-grid">
+                <div class="result-cell">
+                    <span class="result-label">平面距離 (Grid Distance)</span>
+                    <span class="result-val" id="res-dist">--</span><span class="unit">m</span>
+                </div>
+                <div class="result-cell">
+                    <span class="result-label">方位角 (Azimuth)</span>
+                    <span class="result-val" id="res-azi">--</span><span class="unit">dms</span>
+                </div>
+                <div class="result-cell" style="grid-column: 1 / -1; border-bottom: none;">
+                    <span class="result-label">尺度係數估算 (Scale Factor Estimate)</span>
+                    <span class="result-val" id="res-scale" style="font-size:20px; color:#38bdf8;">--</span>
+                    <p style="font-size:12px; color:#64748b; margin-top:5px;">*僅依據橫坐標估算，未包含高程改正</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 格式化 DMS (度分秒)
+    function formatDMS(degrees) {
+        let d = Math.floor(degrees);
+        let m = Math.floor((degrees - d) * 60);
+        let s = ((degrees - d - m/60) * 3600).toFixed(1);
+        
+        // 進位處理
+        if (s >= 60) { s = 0; m++; }
+        if (m >= 60) { m = 0; d++; }
+
+        // 補零
+        let mStr = m.toString().padStart(2, '0');
+        let sStr = s.toString().padStart(4, '0'); // 00.0
+        
+        return `${d}° ${mStr}' ${sStr}"`;
+    }
+
+    function calculateInverse() {
+        // 獲取輸入
+        const n1 = parseFloat(document.getElementById('n1').value);
+        const e1 = parseFloat(document.getElementById('e1').value);
+        const n2 = parseFloat(document.getElementById('n2').value);
+        const e2 = parseFloat(document.getElementById('e2').value);
+
+        if (isNaN(n1) || isNaN(e1) || isNaN(n2) || isNaN(e2)) {
+            alert("請輸入完整的坐標數值！");
+            return;
+        }
+
+        // 計算差值
+        const dN = n2 - n1;
+        const dE = e2 - e1;
+
+        // 1. 計算距離
+        const dist = Math.sqrt(dN*dN + dE*dE);
+
+        // 2. 計算方位角 (數學 atan2 返回的是與 X 軸夾角，需轉換為測量方位角)
+        // 測量方位角：北為 0，順時針增加。
+        // Math.atan2(y, x) -> Math.atan2(dN, dE) ? 不，這是數學坐標
+        // 測量坐標：N 是 y 軸, E 是 x 軸。
+        // 方位角 = atan2(dE, dN)
+        let rad = Math.atan2(dE, dN);
+        let deg = rad * (180 / Math.PI);
+
+        if (deg < 0) {
+            deg += 360;
+        }
+
+        // 3. 簡易估算尺度係數 (僅參考)
+        // 中央經線 E = 250,000
+        // 公式：k = 0.9999 * (1 + (E' ^ 2) / (2 * R^2))
+        // 簡化：k ≈ 0.9999 + 1.23E-14 * (E - 250000)^2
+        const avgE = (e1 + e2) / 2;
+        const deltaE = Math.abs(avgE - 250000);
+        // R 約為 6371000m
+        const k = 0.9999 * (1 + (deltaE * deltaE) / (2 * 6371000 * 6371000));
+        
+        // 更新顯示
+        document.getElementById('res-dist').innerText = dist.toFixed(3);
+        document.getElementById('res-azi').innerText = formatDMS(deg);
+        document.getElementById('res-scale').innerText = k.toFixed(6);
+    }
+</script>
+
+</body>
+</html>

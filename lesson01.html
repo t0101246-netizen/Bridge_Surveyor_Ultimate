@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 01: 測量與真值的距離——誤差傳播定律</title>
+    <style>
+        :root {
+            --bg-theory: #f0f9ff;
+            --bg-field: #fffaf0;
+            --bg-tool: #1a202c;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-blue: #0ea5e9;
+            --accent-orange: #f97316;
+            --border-color: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 大氣排版容器 */
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 50% - 50% 分割 */
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* 標題區 */
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-blue);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        h3 { font-size: 24px; margin-top: 1rem; color: #475569; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+        
+        /* 左欄：理論與圖解 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .theory-column h2 { border-color: var(--accent-blue); color: #0369a1; }
+
+        /* 右欄：實務與工具 */
+        .field-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .field-panel h2 { border-color: var(--accent-orange); color: #c2410c; }
+
+        /* 工具面板 (深色風格) */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            position: sticky; /* 懸浮效果 */
+            top: 20px;
+        }
+
+        .tool-panel h2 { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .tool-panel p { color: #94a3b8; font-size: 18px; }
+
+        /* SVG 容器 */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學公式卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-blue);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入框與按鈕樣式 */
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 16px; margin-bottom: 5px; color: #cbd5e1; }
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            background: #334155;
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+        input[type="number"]:focus { outline: 2px solid var(--accent-blue); border-color: transparent; }
+
+        .btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #0284c7; }
+        .btn-secondary { background: #475569; margin-top: 10px; }
+
+        .result-box {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: "Consolas", monospace;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 5px;
+        }
+        .result-value { color: var(--accent-blue); font-weight: bold; }
+        .pass { color: #22c55e; }
+        .fail { color: #ef4444; }
+
+        /* RWD 處理 */
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 01: 測量與真值的距離 — 誤差傳播定律</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 掌握數據的靈魂，才能駕馭巨大的結構。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🎯 直觀譬喻：打靶的哲學</h2>
+        <p>想像你在玩射擊遊戲。測量數據就像你打在靶上的彈孔，「真值」(True Value) 就是靶心。</p>
+        <ul>
+            <li><strong>精確度 (Precision)：</strong> 你的手很穩，所有子彈都打在同一個點上（彈孔很密集），但不一定在靶心。這叫「偶然誤差小」。</li>
+            <li><strong>準確度 (Accuracy)：</strong> 你的彈孔雖然分散，但平均起來剛好在靶心。</li>
+        </ul>
+        <p><strong>橋樑測量的終極目標：</strong> 先求精確（手穩），再求準確（校正瞄準鏡）。如果手不穩（數據亂跳），就算瞄準鏡再好也沒用。</p>
+
+        <h2>👁️ 視覺圖解：誤差的形狀</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+                    </marker>
+                </defs>
+
+                <g transform="translate(150, 150)">
+                    <circle cx="0" cy="0" r="100" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="70" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="40" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="10" fill="#ef4444" opacity="0.5"/>
+                    <text x="-60" y="130" font-size="16" fill="#333" text-anchor="middle">低精確度 (散亂)</text>
+                    <circle cx="-30" cy="-40" r="3" fill="#0369a1"/>
+                    <circle cx="50" cy="20" r="3" fill="#0369a1"/>
+                    <circle cx="-10" cy="60" r="3" fill="#0369a1"/>
+                    <circle cx="20" cy="-50" r="3" fill="#0369a1"/>
+                </g>
+
+                <g transform="translate(400, 150)">
+                    <circle cx="0" cy="0" r="100" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="70" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="40" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="10" fill="#ef4444" opacity="0.5"/>
+                    <text x="0" y="130" font-size="16" fill="#333" text-anchor="middle">高精確度但低準確度 (系統誤差)</text>
+                    <circle cx="50" cy="-50" r="3" fill="#0369a1"/>
+                    <circle cx="55" cy="-45" r="3" fill="#0369a1"/>
+                    <circle cx="48" cy="-52" r="3" fill="#0369a1"/>
+                    <circle cx="52" cy="-48" r="3" fill="#0369a1"/>
+                </g>
+
+                <g transform="translate(650, 150)">
+                    <line x1="-100" y1="100" x2="100" y2="100" stroke="#333" stroke-width="2"/>
+                    <line x1="0" y1="100" x2="0" y2="-100" stroke="#333" stroke-width="2"/>
+                    <path d="M-100 95 Q -50 95, 0 -80 Q 50 95, 100 95" fill="none" stroke="#f97316" stroke-width="3"/>
+                    <text x="0" y="130" font-size="16" fill="#333" text-anchor="middle">常態分佈 (偶然誤差)</text>
+                    <line x1="0" y1="-80" x2="40" y2="-80" stroke="#999" stroke-dasharray="4"/>
+                    <text x="50" y="-75" font-size="12" fill="#666">μ (真值)</text>
+                </g>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：左為偶然誤差大，中為系統誤差（儀器未校正），右為理想的誤差分佈。</p>
+        </div>
+
+        <h2>📐 硬核理論：為什麼要算標準差？</h2>
+        <p>在路橋工程中，我們永遠無法知道「真值」。我們只能透過無限次的觀測去逼近它。根據<strong>最小二乘法 (Least Squares Principle)</strong>，最或是值（最接近真值的數）就是算術平均數。</p>
+        
+        <p>但這個平均數可信嗎？我們必須計算<strong>標準差 (RMSE, σ)</strong>。</p>
+
+        <div class="math-card">
+            σ = ± √( [vv] / (n - 1) )
+        </div>
+        <p><strong>深度解析：為什麼是 n-1 而不是 n？</strong><br>
+        因為我們是用「樣本」來推估「母體」。當我們計算平均值時，已經消耗掉了一個「自由度」(Degree of Freedom)。如果只有 1 個觀測值，我們完全無法判斷誤差（分母為 0，誤差無限大），這在數學上解釋了為什麼<strong>「孤證不立」</strong>。</p>
+
+        <h3>權重 (Weight) 的概念</h3>
+        <p>並非所有測量都是平等的。
+        <br>- 路線 A：測了 10 公里。
+        <br>- 路線 B：測了 2 公里。
+        <br>顯然 B 的精度較高。在水準測量中，權重 P 與距離 S 成反比：<strong>P ∝ 1/S</strong>。在計算平均值時，必須給短距離的觀測值更高的「話語權」。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：工地現場實戰</h2>
+            
+            <h3>1. 為什麼一定要測「回」？</h3>
+            <p>即使是全站儀這麼先進的儀器，我們仍堅持「正鏡、倒鏡」各測一次取平均。為什麼？
+            <br>這是為了消除<strong>視準軸誤差 (Systematic Error)</strong>。正鏡偏左，倒鏡就會偏右，兩者平均，誤差物理性抵銷。這比事後用數學修正更可靠。</p>
+
+            <h3>2. 剔除「粗差」(Blunders)</h3>
+            <p>如果在計算標準差時，發現某個數據的殘差 (v) 超過 <strong>3倍標準差 (3σ)</strong>，這不是誤差，這是<strong>錯誤</strong>（例如讀錯數、腳架被踢到）。根據統計學，發生 3σ 的機率只有 0.3%，在工地現場我們視為「不可能發生」，必須直接刪除該數據重算。</p>
+
+            <blockquote>
+                <strong>專家心法：</strong> 別迷信儀器顯示的 0.1mm。陽光下的熱閃爍 (Heat Shimmer) 可能造成 2-3mm 的浮動。在烈日下的柏油路面測量，請務必縮短視距，或者改在清晨/傍晚作業。
+            </blockquote>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🧮 互動工具：權重觀測分析器</h2>
+            <p>輸入多筆觀測數據，自動計算加權平均與精度，並進行 3σ 檢核。</p>
+            
+            <div id="inputs-container">
+                <div class="input-group">
+                    <label>觀測值 1 (Value)</label>
+                    <input type="number" class="obs-val" placeholder="例如：10.532" step="0.001">
+                    <label style="margin-top:5px; font-size:14px; color:#94a3b8;">權重 1 (Weight, 預設 1)</label>
+                    <input type="number" class="obs-weight" value="1" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>觀測值 2</label>
+                    <input type="number" class="obs-val" placeholder="例如：10.535" step="0.001">
+                    <label style="margin-top:5px; font-size:14px; color:#94a3b8;">權重 2</label>
+                    <input type="number" class="obs-weight" value="1" step="0.1">
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="addInputRow()">+ 新增觀測數據</button>
+            <button class="btn" onclick="calculate()" style="margin-top: 15px;">開始計算與檢核</button>
+
+            <div class="result-box" id="result-display" style="display:none;">
+                <div class="result-item">
+                    <span>加權平均值 (X̄):</span>
+                    <span class="result-value" id="res-mean">--</span>
+                </div>
+                <div class="result-item">
+                    <span>單位權中誤差 (σ₀):</span>
+                    <span class="result-value" id="res-sigma0">--</span>
+                </div>
+                <div class="result-item">
+                    <span>平均值中誤差 (σ x̄):</span>
+                    <span class="result-value" id="res-sigmax">--</span>
+                </div>
+                <div style="border-top: 1px solid #334155; margin-top: 10px; padding-top: 10px;">
+                    <span style="display:block; margin-bottom: 5px; color: #cbd5e1;">粗差檢核 (3σ 準則):</span>
+                    <div id="qa-log" style="font-size: 14px; color: #94a3b8;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function addInputRow() {
+        const container = document.getElementById('inputs-container');
+        const count = container.children.length / 2 + 1; // 簡單計算
+        
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.innerHTML = `
+            <label>觀測值 ${Math.floor(count)}</label>
+            <input type="number" class="obs-val" placeholder="輸入數值" step="0.001">
+            <label style="margin-top:5px; font-size:14px; color:#94a3b8;">權重 ${Math.floor(count)}</label>
+            <input type="number" class="obs-weight" value="1" step="0.1">
+        `;
+        container.appendChild(div);
+    }
+
+    function calculate() {
+        const valInputs = document.querySelectorAll('.obs-val');
+        const weightInputs = document.querySelectorAll('.obs-weight');
+        let data = [];
+
+        // 收集數據
+        for(let i=0; i<valInputs.length; i++) {
+            const val = parseFloat(valInputs[i].value);
+            const w = parseFloat(weightInputs[i].value);
+            if (!isNaN(val) && !isNaN(w)) {
+                data.push({ v: val, w: w, id: i+1 });
+            }
+        }
+
+        if (data.length < 2) {
+            alert("請至少輸入兩筆數據以計算誤差！");
+            return;
+        }
+
+        // 1. 計算加權平均 X̄ = Σ(pv) / Σp
+        let sumPW = 0;
+        let sumP = 0;
+        data.forEach(d => {
+            sumPW += d.v * d.w;
+            sumP += d.w;
+        });
+        let weightedMean = sumPW / sumP;
+
+        // 2. 計算殘差 v = x - X̄ 與 Σpv²
+        let sumPV2 = 0;
+        let qaLog = "";
+        let maxV = 0;
+        
+        data.forEach(d => {
+            let residual = d.v - weightedMean;
+            sumPV2 += d.w * (residual * residual);
+        });
+
+        // 3. 計算單位權中誤差 sigma0 = √(Σpv² / (n-1))
+        let n = data.length;
+        let sigma0 = Math.sqrt(sumPV2 / (n - 1));
+
+        // 4. 計算平均值中誤差 sigma_x = sigma0 / √Σp
+        let sigmaMean = sigma0 / Math.sqrt(sumP);
+
+        // 5. 3σ 檢核邏輯
+        let isClean = true;
+        let limit = 3 * sigma0; // 3倍單位權標準差作為單次觀測的容許極限
+        
+        qaLog += `<p>檢核標準 (3σ₀): ±${(limit).toFixed(4)}</p>`;
+        
+        data.forEach(d => {
+            let residual = d.v - weightedMean;
+            let residualAbs = Math.abs(residual);
+            let status = residualAbs > limit ? "<span class='fail'>[剔除]</span>" : "<span class='pass'>[合格]</span>";
+            if (residualAbs > limit) isClean = false;
+            
+            qaLog += `<p>觀測 ${d.id}: 殘差 ${residual.toFixed(4)} ... ${status}</p>`;
+        });
+
+        if (!isClean) {
+            qaLog += `<p style='color:#ef4444; margin-top:5px;'><strong>⚠️ 警告：發現粗差！建議剔除異常值後重算。</strong></p>`;
+        } else {
+            qaLog += `<p style='color:#22c55e; margin-top:5px;'><strong>✅ 所有數據皆在統計容許範圍內。</strong></p>`;
+        }
+
+        // 顯示結果
+        document.getElementById('res-mean').innerText = weightedMean.toFixed(5);
+        document.getElementById('res-sigma0').innerText = "±" + sigma0.toFixed(5);
+        document.getElementById('res-sigmax').innerText = "±" + sigmaMean.toFixed(5);
+        document.getElementById('qa-log').innerHTML = qaLog;
+        document.getElementById('result-display').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 06: 定位自己的位置——導線測量與後方交會</title>
+    <style>
+        :root {
+            --bg-theory: #fff1f2; /* 玫瑰紅背景，象徵幾何的熱情 */
+            --bg-field: #fffaf0;
+            --bg-tool: #0f172a;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-pink: #e11d48; /* 幾何主題色 */
+            --accent-orange: #f97316;
+            --border-color: #cbd5e1;
+            --tech-cyan: #06b6d4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-pink);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-pink); color: #be123c; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-orange); color: #c2410c; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #334155;
+        }
+        .tool-panel h2 { border-color: var(--tech-cyan); color: var(--tech-cyan); }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-pink);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入介面 */
+        .input-group { margin-bottom: 15px; padding: 15px; background: #1e293b; border-radius: 8px; }
+        .input-group h3 { color: var(--tech-cyan); margin-bottom: 10px; font-size: 18px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #94a3b8; }
+        input {
+            width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569;
+            color: white; border-radius: 4px; font-size: 16px; font-family: 'Consolas', monospace;
+        }
+        input:focus { outline: 2px solid var(--tech-cyan); border-color: transparent; }
+
+        .btn {
+            background: linear-gradient(135deg, #0891b2, #0e7490);
+            color: white; border: none; padding: 15px; margin-top: 10px;
+            font-size: 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+        }
+        .btn:hover { filter: brightness(1.1); }
+
+        .result-screen {
+            background: #000; border: 2px solid #334155; padding: 20px;
+            border-radius: 8px; margin-top: 20px; font-family: 'Consolas', monospace;
+            color: var(--tech-cyan);
+        }
+        .res-coord { font-size: 24px; font-weight: bold; color: white; display: block; margin: 10px 0; }
+        .res-label { color: #64748b; font-size: 14px; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 06: 定位自己的位置 — 導線測量與後方交會</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 找不到已知點架儀器？那就把儀器架在任意點，用數學把已知點「抓」過來。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>⚓ 直觀譬喻：海上的燈塔</h2>
+        <p>想像你在茫茫大海上開船（儀器任意設站），你不知道自己的坐標。
+        <br>但你看到了遠方兩座燈塔 A 和 B（已知控制點）。</p>
+        <p>只要你用雷達測出<strong>「你到 A 的距離」</strong>和<strong>「你到 B 的距離」</strong>，你的位置就被鎖定了。</p>
+        <p>這在數學上叫「圓的交會」。你就位於以 A 為圓心 (半徑=測距A) 和以 B 為圓心 (半徑=測距B) 的兩個圓的交點上。
+        <br>唯一的陷阱是：兩個圓通常有兩個交點（鏡像解）。但身為工程師，你肯定知道自己在線的左邊還是右邊，對吧？</p>
+
+        <h2>📐 視覺圖解：距離後方交會 (Resection by Distance)</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect width="800" height="400" fill="url(#grid)" />
+
+                <circle cx="200" cy="100" r="8" fill="#e11d48"/>
+                <text x="200" y="80" text-anchor="middle" font-weight="bold" fill="#e11d48">已知點 A</text>
+                
+                <circle cx="600" cy="100" r="8" fill="#e11d48"/>
+                <text x="600" y="80" text-anchor="middle" font-weight="bold" fill="#e11d48">已知點 B</text>
+
+                <line x1="200" y1="100" x2="600" y2="100" stroke="#cbd5e1" stroke-dasharray="5"/>
+
+                <circle cx="400" cy="350" r="10" fill="#06b6d4" stroke="white" stroke-width="3"/>
+                <text x="400" y="380" text-anchor="middle" font-weight="bold" fill="#06b6d4">未知測站 P</text>
+
+                <line x1="400" y1="350" x2="200" y2="100" stroke="#06b6d4" stroke-width="2"/>
+                <text x="280" y="240" fill="#06b6d4" font-weight="bold">距離 a</text>
+
+                <line x1="400" y1="350" x2="600" y2="100" stroke="#06b6d4" stroke-width="2"/>
+                <text x="520" y="240" fill="#06b6d4" font-weight="bold">距離 b</text>
+
+                <path d="M 230 140 Q 250 120 250 100" fill="none" stroke="#f97316" stroke-width="2"/>
+                <text x="260" y="140" fill="#f97316">解算角 θ</text>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：透過測量 P 到 A、B 的距離，形成一個三角形。利用「餘弦定理」解出角度，再推算坐標。</p>
+        </div>
+
+        <h2>🧮 硬核理論：餘弦定理定江山</h2>
+        <p>我們知道 A、B 坐標，所以可以算出邊長 $C$ (A到B的距離)。
+        <br>現在三角形三邊長 $a$ (測距A), $b$ (測距B), $C$ (已知) 都知道了。</p>
+        
+        <p><strong>Step 1: 算出內角 A</strong></p>
+        <div class="math-card">
+            \cos A = \frac{b^2 + C^2 - a^2}{2bC}
+        </div>
+        <p>注意：這裡的 $a, b, C$ 對應通常習慣，我們稍後在工具中會用 $Dist_A, Dist_B, Dist_{AB}$ 來表示。</p>
+
+        <p><strong>Step 2: 坐標方位角推算</strong></p>
+        <p>先算已知邊 AB 的方位角 $\phi_{AB}$。
+        <br>測站 P 的方位角 $\phi_{AP} = \phi_{AB} \pm \angle A$。
+        <br>(加或減取決於 P 在 AB 連線的哪一側)</p>
+
+        <p><strong>Step 3: 坐標正算</strong></p>
+        <div class="math-card">
+            N_P = N_A + Dist_A \times \cos(\phi_{AP})<br>
+            E_P = E_A + Dist_A \times \sin(\phi_{AP})
+        </div>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：圖形強度 (Geometry)</h2>
+            
+            <h3>1. 危險圓 (Danger Circle)</h3>
+            <p>如果你只測角度（後方交會），當你和兩個已知點 A、B 剛好在同一個圓周上時，<strong>無解！</strong> 計算機會算出無限多組解，你的坐標會亂飄。
+            <br>但在「測距交會」中，危險的是<strong>「一直線」</strong>。如果你站在 A、B 的連線上，或者 A-P-B 夾角接近 180 度，這時圖形強度最弱，些微的距離誤差會導致坐標劇烈偏移。</p>
+
+            <h3>2. 黃金夾角</h3>
+            <p>最完美的交會角度是 <strong>90度</strong>。
+            <br>最差的角度是 0度 或 180度。
+            <br><strong>實務法則：</strong> 選擇已知點時，盡量讓夾角保持在 <strong>60度 ~ 120度</strong> 之間。如果只能選很近的兩個點，寧可多跑一趟引點，也不要強行交會。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🛰️ 互動工具：雙點距離後方交會模擬器</h2>
+            <p>只要能看到兩個已知點，就能算出你現在在哪裡。</p>
+            
+            <div class="input-group">
+                <h3>📍 已知點 A (Known Point A)</h3>
+                <div class="input-grid">
+                    <div>
+                        <label>N (北坐標)</label>
+                        <input type="number" id="nA" value="1000.000">
+                    </div>
+                    <div>
+                        <label>E (東坐標)</label>
+                        <input type="number" id="eA" value="1000.000">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label style="color:#06b6d4;">實測距離 Dist A (m)</label>
+                        <input type="number" id="distA" value="50.000" style="border-color:#06b6d4;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <h3>📍 已知點 B (Known Point B)</h3>
+                <div class="input-grid">
+                    <div>
+                        <label>N (北坐標)</label>
+                        <input type="number" id="nB" value="1050.000">
+                    </div>
+                    <div>
+                        <label>E (東坐標)</label>
+                        <input type="number" id="eB" value="1050.000">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label style="color:#06b6d4;">實測距離 Dist B (m)</label>
+                        <input type="number" id="distB" value="50.000" style="border-color:#06b6d4;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label>測站位於 AB 連線行進方向的：</label>
+                <select id="side" style="padding:10px; background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; width:100%;">
+                    <option value="right">右側 (Right Side)</option>
+                    <option value="left">左側 (Left Side)</option>
+                </select>
+            </div>
+
+            <button class="btn" onclick="calcResection()">📡 計算測站坐標</button>
+
+            <div class="result-screen" id="result-screen" style="display:none;">
+                <div style="border-bottom: 1px dashed #333; padding-bottom:10px; margin-bottom:10px;">
+                    <span class="res-label">幾何檢核 (Geometry Check):</span>
+                    <span id="res-angle" style="display:block; color:#f97316;">--</span>
+                </div>
+                <div>
+                    <span class="res-label">測站北坐標 (N):</span>
+                    <span class="res-coord" id="res-nP">--</span>
+                </div>
+                <div>
+                    <span class="res-label">測站東坐標 (E):</span>
+                    <span class="res-coord" id="res-eP">--</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function calcResection() {
+        // 1. 獲取數據
+        const nA = parseFloat(document.getElementById('nA').value);
+        const eA = parseFloat(document.getElementById('eA').value);
+        const dA = parseFloat(document.getElementById('distA').value);
+
+        const nB = parseFloat(document.getElementById('nB').value);
+        const eB = parseFloat(document.getElementById('eB').value);
+        const dB = parseFloat(document.getElementById('distB').value);
+
+        const side = document.getElementById('side').value;
+
+        if ([nA, eA, dA, nB, eB, dB].some(isNaN)) {
+            alert("請輸入完整數據！");
+            return;
+        }
+
+        // 2. 計算 AB 邊長與方位角
+        const dN = nB - nA;
+        const dE = eB - eA;
+        const distAB = Math.sqrt(dN*dN + dE*dE);
+        
+        // 數學方位角 atan2(y, x) -> 測量方位角 atan2(dE, dN)
+        let azAB = Math.atan2(dE, dN); // 弧度
+        if (azAB < 0) azAB += 2 * Math.PI;
+
+        // 3. 三角形合法性檢查 (兩邊之和 > 第三邊)
+        if (dA + dB < distAB || Math.abs(dA - dB) > distAB) {
+            alert("錯誤：輸入的距離無法構成三角形！(太短或太長)");
+            return;
+        }
+
+        // 4. 餘弦定理求解內角 A (P在A處的夾角)
+        // dB^2 = dA^2 + distAB^2 - 2 * dA * distAB * cos(Angle_A)
+        // cos(Angle_A) = (dA^2 + distAB^2 - dB^2) / (2 * dA * distAB)
+        const cosA = (dA*dA + distAB*distAB - dB*dB) / (2 * dA * distAB);
+        const angleA = Math.acos(cosA); // 弧度 (0 ~ PI)
+
+        // 5. 計算 AP 的方位角
+        let azAP;
+        if (side === 'right') {
+            // 如果 P 在 AB 右側，則 AP 方位角 = AB 方位角 + Angle A
+            azAP = azAB + angleA;
+        } else {
+            // 如果 P 在 AB 左側，則 AP 方位角 = AB 方位角 - Angle A
+            azAP = azAB - angleA;
+        }
+
+        // 6. 坐標正算
+        const nP = nA + dA * Math.cos(azAP);
+        const eP = eA + dA * Math.sin(azAP);
+
+        // 7. 計算交會角 (P點夾角) 以評估圖形強度
+        // distAB^2 = dA^2 + dB^2 - 2*dA*dB*cos(P)
+        const cosP = (dA*dA + dB*dB - distAB*distAB) / (2 * dA * dB);
+        const angleP_deg = Math.acos(cosP) * (180 / Math.PI);
+
+        // 顯示結果
+        document.getElementById('res-nP').innerText = nP.toFixed(4);
+        document.getElementById('res-eP').innerText = eP.toFixed(4);
+        
+        const angleStatus = (angleP_deg >= 30 && angleP_deg <= 150) ? "良好 (Good)" : "不佳 (Poor) - 建議更換控制點";
+        const angleColor = (angleP_deg >= 30 && angleP_deg <= 150) ? "#4ade80" : "#ef4444";
+        
+        document.getElementById('res-angle').innerHTML = `交會夾角: ${angleP_deg.toFixed(1)}° <span style="color:${angleColor}; margin-left:10px;">[${angleStatus}]</span>`;
+        
+        document.getElementById('result-screen').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

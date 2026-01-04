@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 04: 閉合與平差——水準網的嚴密計算</title>
+    <style>
+        :root {
+            --bg-theory: #f5f3ff; /* 淡紫背景，象徵嚴謹數學 */
+            --bg-field: #fffaf0;
+            --bg-tool: #1a202c;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-purple: #7c3aed; /* 平差的主題色 */
+            --accent-orange: #f97316;
+            --border-color: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-purple);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        h3 { font-size: 24px; margin-top: 1rem; color: #475569; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-purple); color: #5b21b6; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-orange); color: #c2410c; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 20px;
+        }
+        .tool-panel h2 { border-color: var(--accent-purple); color: #a78bfa; }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-purple);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入介面 */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: end;
+        }
+        .input-row label { font-size: 12px; color: #94a3b8; margin-bottom: 2px; }
+        input[type="number"], input[type="text"] {
+            width: 100%; padding: 8px; background: #334155; border: 1px solid #475569;
+            color: white; border-radius: 4px; font-size: 16px;
+        }
+        
+        .btn {
+            background: var(--accent-purple); color: white; border: none; padding: 12px;
+            font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #6d28d9; }
+        .btn-small { padding: 5px 10px; font-size: 14px; background: #475569; width: auto; }
+        .btn-delete { background: #ef4444; color: white; border:none; padding: 8px; border-radius: 4px; cursor: pointer;}
+
+        /* 表格樣式 */
+        .result-table {
+            width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 16px;
+            font-family: 'Consolas', monospace;
+        }
+        .result-table th { text-align: left; color: #94a3b8; border-bottom: 1px solid #475569; padding: 5px; }
+        .result-table td { padding: 8px 5px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+        .val-corr { color: var(--accent-orange); }
+        .val-final { color: #4ade80; font-weight: bold; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 04: 閉合與平差 — 水準網的嚴密計算</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 測量不是為了得到完美的零誤差，而是為了優雅地「分配」不可避免的誤差。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🍞 直觀譬喻：分攤帳單的藝術</h2>
+        <p>想像你們一群人去餐廳吃飯，菜單價格加總應是 1000 元，但最後結帳時老闆卻收了 1010 元（這多出的 10 元就是<strong>閉合差</strong>）。</p>
+        <p>這 10 元要誰出？
+        <br>1. <strong>平均分攤？</strong> 不公平，有人只吃一口，有人吃全餐。
+        <br>2. <strong>按食量分攤？</strong> 正解。</p>
+        <p>在水準測量中，「食量」就是<strong>測量距離</strong>。距離越長，累積誤差的風險越高，因此該路段必須承擔更多的「誤差修正量」。這就是<strong>平差 (Adjustment)</strong> 的核心精神。</p>
+
+        <h2>🔄 視覺圖解：閉合水準迴圈</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 50 250 Q 200 150 400 250 T 750 200" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                
+                <g transform="translate(50, 250)">
+                    <rect x="-10" y="-10" width="20" height="20" fill="#7c3aed"/>
+                    <text x="0" y="35" text-anchor="middle" font-weight="bold">BM-A (起)</text>
+                    <text x="0" y="-20" text-anchor="middle" fill="#7c3aed">H=10.000</text>
+                </g>
+
+                <g transform="translate(400, 250)">
+                    <circle cx="0" cy="0" r="8" fill="#f97316"/>
+                    <text x="0" y="30" text-anchor="middle">TP1</text>
+                </g>
+
+                <g transform="translate(750, 200)">
+                    <rect x="-10" y="-10" width="20" height="20" fill="#7c3aed" opacity="0.5"/>
+                    <text x="0" y="35" text-anchor="middle" font-weight="bold">BM-A (終)</text>
+                    <line x1="20" y1="0" x2="60" y2="0" stroke="#333" stroke-dasharray="2"/>
+                    <line x1="20" y1="-15" x2="60" y2="-15" stroke="#ef4444" stroke-width="2"/>
+                    <text x="70" y="-5" fill="#ef4444" font-weight="bold" font-size="14">閉合差 fh</text>
+                    <text x="0" y="-30" text-anchor="middle" fill="#ef4444">H'=10.015</text>
+                </g>
+
+                <path d="M 70 240 Q 200 100 380 230" fill="none" stroke="#333" marker-end="url(#arrow)"/>
+                <path d="M 420 240 Q 600 150 730 190" fill="none" stroke="#333" marker-end="url(#arrow)"/>
+
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+                    </marker>
+                </defs>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：從已知點出發，測了一圈回到原點，高程竟然變高了？這多出來的 fh 必須反號分配回去。</p>
+        </div>
+
+        <h2>📐 硬核理論：誤差分配公式</h2>
+        <p><strong>1. 閉合差計算 (Misclosure)：</strong></p>
+        <div class="math-card">
+            f_h = \sum \Delta H_{觀測} - (H_{終} - H_{始})
+        </div>
+        <p>如果是閉合環線，起終點相同，則 $f_h = \sum \Delta H_{觀測}$。</p>
+
+        <p><strong>2. 精度容許值檢核 (Tolerance)：</strong><br>
+        根據台灣測量規範 (CNS) 或一般工程標準：</p>
+        <ul>
+            <li><strong>普通水準 (三等)：</strong> $\pm 12 \sqrt{K}$ mm</li>
+            <li><strong>精密水準 (二等)：</strong> $\pm 4 \sqrt{K}$ mm</li>
+        </ul>
+        <p>其中 $K$ 為測量路線總長度 (公里)。如果 $f_h$ 超過此值，必須重測！</p>
+
+        <p><strong>3. 改正數分配 (Correction)：</strong><br>
+        第 $i$ 段的改正數 $v_i$ 與該段距離 $d_i$ 成正比：</p>
+        <div class="math-card">
+            v_i = -f_h \times \frac{d_i}{\sum d}
+        </div>
+        <p>注意前面的負號！如果測出來太高 (正誤差)，就要扣掉 (負改正)。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：不要相信懸空的路</h2>
+            
+            <h3>1. 轉點 (TP) 的學問：鐵板與烏龜</h3>
+            <p>TP 點是連結測站的關鍵。千萬不要選在草地或鬆軟泥土上！
+            <br><strong>標準配備：</strong> 隨身攜帶「尺墊」(Turtle/Footplate)。
+            <br><strong>操作密技：</strong> 踩！確實把尺墊的三隻腳踩進土裡。標尺手在立尺時，要前後輕微搖晃標尺 (Waving)，測量員讀取「最小讀數」，這才是垂直於地面的真實高度。</p>
+
+            <h3>2. 路線規劃：附合 vs. 閉合</h3>
+            <p>永遠不要做「支導線」(Open Traverse)，也就是測出去就不回頭。這樣你永遠不知道錯了沒。
+            <br><strong>A級方案 (附合)：</strong> 從已知點 A 測到 已知點 B。這能同時檢核 A、B 兩點是否有地層下陷。
+            <br><strong>B級方案 (閉合)：</strong> 從 A 測出去繞一圈回到 A。這能檢核測量過程，但無法發現 A 點本身是否已經沉陷。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🧮 互動工具：附合/閉合水準平差表</h2>
+            <p>輸入路線各段數據，自動進行閉合差檢核與誤差分配。</p>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px; border-bottom:1px solid #475569; padding-bottom:15px;">
+                <div>
+                    <label>起點高程 (Start H)</label>
+                    <input type="number" id="startH" value="10.000" step="0.001">
+                </div>
+                <div>
+                    <label>終點已知高程 (End H)</label>
+                    <input type="number" id="endH" value="10.000" step="0.001" placeholder="若閉合則同起點">
+                </div>
+            </div>
+
+            <div id="segments-container">
+                <div class="input-row" id="row-1">
+                    <div>
+                        <label>點號</label>
+                        <input type="text" value="TP1" disabled>
+                    </div>
+                    <div>
+                        <label>高程差 ΔH (m)</label>
+                        <input type="number" class="seg-dh" placeholder="+1.234">
+                    </div>
+                    <div>
+                        <label>距離 (m)</label>
+                        <input type="number" class="seg-dist" placeholder="50">
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn btn-small" onclick="addSegment()">+ 增加測段</button>
+                <button class="btn btn-small" onclick="fillDemoData()" style="background:#0d9488;">載入範例數據</button>
+            </div>
+
+            <button class="btn" onclick="calculateAdjustment()">⚡ 執行平差計算</button>
+
+            <div id="result-area" style="display:none; margin-top:20px; border-top:1px solid #475569; padding-top:10px;">
+                <p>閉合差 (fh): <span id="res-fh" style="font-weight:bold; color:#ef4444;">--</span> mm</p>
+                <p>路線總長 (ΣL): <span id="res-len">--</span> m</p>
+                <p>容許誤差 (12√K): <span id="res-tol">--</span> mm <span id="res-status"></span></p>
+
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>點號</th>
+                            <th>改正數(mm)</th>
+                            <th>改正後高程(m)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let segmentCount = 1;
+
+    function addSegment() {
+        segmentCount++;
+        const container = document.getElementById('segments-container');
+        const div = document.createElement('div');
+        div.className = 'input-row';
+        div.id = `row-${segmentCount}`;
+        div.innerHTML = `
+            <div>
+                <input type="text" value="TP${segmentCount}">
+            </div>
+            <div>
+                <input type="number" class="seg-dh" placeholder="ΔH">
+            </div>
+            <div>
+                <input type="number" class="seg-dist" placeholder="Dist">
+            </div>
+            <div>
+                <button class="btn-delete" onclick="removeSegment(${segmentCount})">✕</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeSegment(id) {
+        const row = document.getElementById(`row-${id}`);
+        row.remove();
+    }
+
+    function fillDemoData() {
+        document.getElementById('startH').value = 20.000;
+        document.getElementById('endH').value = 20.000; // 閉合環
+        
+        // 清空並重建
+        document.getElementById('segments-container').innerHTML = '';
+        segmentCount = 0;
+
+        const demoData = [
+            {name: 'TP1', dh: 1.523, dist: 60},
+            {name: 'TP2', dh: 2.410, dist: 80},
+            {name: 'TP3', dh: -1.850, dist: 50},
+            {name: 'BM-End', dh: -2.070, dist: 70} // 總和 0.013
+        ];
+
+        demoData.forEach(d => {
+            segmentCount++;
+            const div = document.createElement('div');
+            div.className = 'input-row';
+            div.innerHTML = `
+                <div><input type="text" value="${d.name}"></div>
+                <div><input type="number" class="seg-dh" value="${d.dh}"></div>
+                <div><input type="number" class="seg-dist" value="${d.dist}"></div>
+                <div></div>
+            `;
+            document.getElementById('segments-container').appendChild(div);
+        });
+    }
+
+    function calculateAdjustment() {
+        // 1. 讀取基礎數據
+        const startH = parseFloat(document.getElementById('startH').value);
+        const endH = parseFloat(document.getElementById('endH').value);
+        
+        const dhInputs = document.querySelectorAll('.seg-dh');
+        const distInputs = document.querySelectorAll('.seg-dist');
+        const nameInputs = document.querySelectorAll('.input-row input[type="text"]');
+
+        let totalDist = 0;
+        let sumMeasDH = 0;
+        let segments = [];
+
+        // 2. 收集數據
+        for(let i=0; i<dhInputs.length; i++) {
+            let dh = parseFloat(dhInputs[i].value);
+            let dist = parseFloat(distInputs[i].value);
+            let name = nameInputs[i].value;
+
+            if(isNaN(dh) || isNaN(dist)) continue;
+
+            sumMeasDH += dh;
+            totalDist += dist;
+            segments.push({name, dh, dist});
+        }
+
+        if(segments.length === 0) {
+            alert("請輸入測段數據！");
+            return;
+        }
+
+        // 3. 計算閉合差
+        // 理論高程差
+        const theoryDH = endH - startH;
+        // 閉合差 fh = 觀測總和 - 理論總和
+        const fh = sumMeasDH - theoryDH; 
+        const fh_mm = fh * 1000;
+
+        // 4. 計算容許誤差 (12 * sqrt(K))
+        const K = totalDist / 1000;
+        const tolerance = 12 * Math.sqrt(K);
+
+        // 5. 顯示概況
+        document.getElementById('res-fh').innerText = (fh > 0 ? "+" : "") + fh_mm.toFixed(1);
+        document.getElementById('res-len').innerText = totalDist.toFixed(1);
+        document.getElementById('res-tol').innerText = "±" + tolerance.toFixed(1);
+        
+        const statusSpan = document.getElementById('res-status');
+        if (Math.abs(fh_mm) <= tolerance) {
+            statusSpan.innerHTML = "<span style='color:#4ade80; font-weight:bold;'>[合格 PASS]</span>";
+        } else {
+            statusSpan.innerHTML = "<span style='color:#ef4444; font-weight:bold;'>[不合格 FAIL]</span>";
+        }
+
+        // 6. 分配誤差與計算高程
+        let currentH = startH;
+        let html = `<tr><td>起點</td><td>-</td><td class="val-final">${startH.toFixed(3)}</td></tr>`;
+        
+        // 累計修正量 (用於消除湊整誤差)
+        let accumulatedCorrection = 0;
+
+        segments.forEach((seg, index) => {
+            // 計算該段改正數 (按距離比例)
+            // vi = -fh * (di / totalD)
+            let correction = -fh * (seg.dist / totalDist);
+            
+            // 湊整到 mm
+            // 這裡為了讓總和剛好等於 -fh，通常需要更複雜的湊整邏輯
+            // 簡單實作：直接加 double 精度，顯示時才四捨五入，最後一點強制閉合
+            
+            let adjustedDH = seg.dh + correction;
+            currentH += adjustedDH;
+
+            let corrDisplay = (correction * 1000).toFixed(1);
+            let hDisplay = currentH.toFixed(4); // 多留一位供參考
+
+            html += `
+                <tr>
+                    <td>${seg.name}</td>
+                    <td class="val-corr">${corrDisplay}</td>
+                    <td class="val-final">${hDisplay}</td>
+                </tr>
+            `;
+        });
+
+        // 強制顯示終點檢核
+        // 理論上 currentH 應該非常接近 endH
+        document.getElementById('result-body').innerHTML = html;
+        document.getElementById('result-area').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

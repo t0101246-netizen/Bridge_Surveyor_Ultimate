@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 03: 重力的指引——水準儀原理與檢校</title>
+    <style>
+        :root {
+            --bg-theory: #f0fdf4; /* 淺綠背景，象徵大地與水平 */
+            --bg-field: #fffaf0;
+            --bg-tool: #1a202c;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-teal: #0d9488; /* 水準測量的主題色 */
+            --accent-orange: #f97316;
+            --border-color: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-teal);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        h3 { font-size: 24px; margin-top: 1rem; color: #475569; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-teal); color: #0f766e; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-orange); color: #c2410c; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 20px;
+        }
+        .tool-panel h2 { border-color: var(--accent-teal); color: #2dd4bf; }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-teal);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Input Styles */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .input-group { background: #334155; padding: 15px; border-radius: 8px; }
+        .input-group h4 { color: #94a3b8; margin-bottom: 10px; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #cbd5e1; }
+        input[type="number"] {
+            width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569;
+            color: white; border-radius: 4px; font-size: 18px; font-family: 'Consolas', monospace;
+        }
+        input:focus { outline: 2px solid var(--accent-teal); border-color: transparent; }
+
+        .btn {
+            background: var(--accent-teal); color: white; border: none; padding: 15px;
+            font-size: 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #0f766e; }
+
+        .result-box {
+            background: #0f172a; padding: 20px; border-radius: 8px; margin-top: 20px;
+            font-family: "Consolas", monospace; border: 1px solid #334155;
+        }
+        .status-pass { color: #4ade80; font-weight: bold; }
+        .status-fail { color: #f87171; font-weight: bold; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 03: 重力的指引 — 水準儀原理與檢校</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 水會尋找平面，但儀器會說謊。如果不隨時檢核，您的橋就會蓋成斜坡。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🌊 直觀譬喻：平靜的湖面</h2>
+        <p>水準測量的原理很簡單：<strong>水靜止時，表面永遠垂直於重力。</strong> 這就是「等位面」(Equipotential Surface)。</p>
+        <p>水準儀就像一個高科技的「水漂」。我們試圖建立一條與湖面平行的「視線」。<br>
+        但問題來了：<strong>如果你的「視線」是歪的呢？</strong> 就像一把彎曲的尺，你以為你讀到的是 1.500m，實際可能是 1.495m。這個「歪」就是<strong>視準軸誤差 (Collimation Error)</strong>。</p>
+
+        <h2>👁️ 視覺圖解：兩杭檢校原理 (Two-Peg Test)</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <line x1="50" y1="300" x2="750" y2="300" stroke="#333" stroke-width="2"/>
+                
+                <g transform="translate(100, 300)">
+                    <rect x="-5" y="-150" width="10" height="150" fill="#f1f5f9" stroke="#333"/>
+                    <text x="0" y="20" text-anchor="middle" font-weight="bold">標尺 A</text>
+                </g>
+                <g transform="translate(700, 300)">
+                    <rect x="-5" y="-180" width="10" height="180" fill="#f1f5f9" stroke="#333"/>
+                    <text x="0" y="20" text-anchor="middle" font-weight="bold">標尺 B</text>
+                </g>
+
+                <g transform="translate(400, 200)">
+                    <circle cx="0" cy="0" r="5" fill="#0d9488"/>
+                    <text x="0" y="-20" text-anchor="middle" font-size="14" fill="#0d9488">測站 1 (置中)</text>
+                    <line x1="-300" y1="0" x2="300" y2="0" stroke="#94a3b8" stroke-dasharray="4"/>
+                    <line x1="-300" y1="-10" x2="300" y2="-10" stroke="#ef4444" stroke-width="2"/>
+                    <text x="0" y="-40" text-anchor="middle" font-size="12" fill="#ef4444">視線雖歪，但 A、B 兩端歪的一樣多 → 高程差正確</text>
+                </g>
+
+                <g transform="translate(600, 220)">
+                    <circle cx="0" cy="0" r="5" fill="#f97316"/>
+                    <text x="0" y="30" text-anchor="middle" font-size="14" fill="#f97316">測站 2 (近 B)</text>
+                    <line x1="-500" y1="-25" x2="100" y2="5" stroke="#f97316" stroke-width="2" stroke-dasharray="2"/>
+                    <text x="-250" y="-30" text-anchor="middle" font-size="12" fill="#f97316">距離長，誤差放大</text>
+                    <text x="50" y="0" text-anchor="middle" font-size="12" fill="#f97316">距離短，誤差小</text>
+                </g>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：置中測量時，視準軸誤差 (紅色) 在兩端相互抵銷。一旦靠近一端測量 (橘色)，誤差就會原形畢露。</p>
+        </div>
+
+        <h2>📐 硬核理論：誤差數學模型</h2>
+        <p>假設視準軸向上偏了 $\alpha$ 角。讀數 $r$ 與距離 $D$ 的關係為：</p>
+        <div class="math-card">
+            r_{measured} = r_{true} + D \cdot \tan(\alpha)
+        </div>
+        <p><strong>高程差公式：</strong> $\Delta H = r_A - r_B$<br>
+        帶入誤差後：
+        $\Delta H_{meas} = (r_A^{true} + D_A \tan \alpha) - (r_B^{true} + D_B \tan \alpha)$<br>
+        $\Delta H_{meas} = \Delta H_{true} + (D_A - D_B) \tan \alpha$</p>
+
+        <p><strong>黃金法則：</strong> 當 $D_A = D_B$ (前後視等距) 時，$(D_A - D_B) = 0$，誤差項直接消失！這就是為什麼在做水準測量時，我們拚了命也要保持儀器在中間。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：現場只有一次機會</h2>
+            
+            <h3>1. 兩杭檢校 (Two-Peg Test) 實作流程</h3>
+            <p>不要偷懶。每天開工前，花 10 分鐘做這個檢查：</p>
+            <ol>
+                <li><strong>定樁：</strong> 在平地打兩支標尺 A、B，相距約 60m。</li>
+                <li><strong>置中測：</strong> 儀器架在正中間 (30m處)。讀取 a1, b1。計算高程差 $\Delta H = a1 - b1$。(這是真值！)</li>
+                <li><strong>近測：</strong> 儀器移到 B 尺附近 (約 3-5m)。讀取 a2, b2。</li>
+                <li><strong>檢核：</strong> 用 $\Delta H$ 推算 a2 的「理論讀數」。如果實際 a2 差太多，儀器就要送修或現場校正。</li>
+            </ol>
+
+            <h3>2. 圓氣泡 vs. 管氣泡</h3>
+            <p>很多新手只看圓氣泡居中就開始測。<strong>錯！</strong> 自動水準儀 (Auto Level) 雖然有補償器，但補償範圍很小。如果圓氣泡沒精確居中，補償器會「卡住」(Sticky)，導致讀數全錯。
+            <br><strong>老鳥技巧：</strong> 每次讀數前，用手指輕輕敲一下儀器外殼。這能震動補償器，確認它懸吊正常。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🛠️ 互動工具：水準儀健康診斷書</h2>
+            <p>輸入兩次設站的讀數，自動計算視準軸誤差並判定是否合格。</p>
+            
+            <div class="input-group">
+                <h4>Step 1: 置中測量 (Midpoint)</h4>
+                <div class="input-grid">
+                    <div>
+                        <label>後視標尺 A 讀數 (a1)</label>
+                        <input type="number" id="a1" placeholder="1.500" step="0.001">
+                    </div>
+                    <div>
+                        <label>前視標尺 B 讀數 (b1)</label>
+                        <input type="number" id="b1" placeholder="1.450" step="0.001">
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <h4>Step 2: 靠近 B 標尺測量 (Near B)</h4>
+                <div class="input-grid">
+                    <div>
+                        <label>遠端標尺 A 讀數 (a2)</label>
+                        <input type="number" id="a2" placeholder="1.520" step="0.001">
+                    </div>
+                    <div>
+                        <label>近端標尺 B 讀數 (b2)</label>
+                        <input type="number" id="b2" placeholder="1.465" step="0.001">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label>兩標尺間距 (m)</label>
+                <input type="number" id="dist" value="60" style="background:#1e293b;">
+            </div>
+
+            <button class="btn" onclick="calcTwoPeg()" style="margin-top: 20px;">開始診斷</button>
+
+            <div class="result-box" id="result-area" style="display:none;">
+                <p>真實高程差 (True ΔH): <span id="true-dh" style="color:var(--accent-teal)">--</span> m</p>
+                <p>近測高程差 (Meas ΔH): <span id="meas-dh" style="color:var(--accent-orange)">--</span> m</p>
+                <hr style="border-color:#334155; margin:10px 0;">
+                <p>誤差值 (Error): <span id="error-val">--</span> mm</p>
+                <p>判定結果: <span id="status-text">--</span></p>
+                <p style="font-size:12px; color:#94a3b8; margin-top:5px;">*容許誤差以 ±3mm/60m 為通用標準</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function calcTwoPeg() {
+        // 獲取輸入
+        const a1 = parseFloat(document.getElementById('a1').value);
+        const b1 = parseFloat(document.getElementById('b1').value);
+        const a2 = parseFloat(document.getElementById('a2').value);
+        const b2 = parseFloat(document.getElementById('b2').value);
+        const D = parseFloat(document.getElementById('dist').value);
+
+        if (isNaN(a1) || isNaN(b1) || isNaN(a2) || isNaN(b2)) {
+            alert("請輸入完整的讀數！");
+            return;
+        }
+
+        // 1. 計算真高程差 (Step 1 置中測量，視為無誤差)
+        // ΔH = 後視 - 前視 = a1 - b1
+        const trueDH = a1 - b1;
+
+        // 2. 計算第二次測量的高程差
+        const measDH = a2 - b2;
+
+        // 3. 計算誤差
+        // 理論上 a2 應該等於 b2 + trueDH
+        const expected_a2 = b2 + trueDH;
+        const error = a2 - expected_a2; // 這是總誤差量 (在距離 D 上的偏差)
+        
+        // 換算成 mm
+        const errorMM = error * 1000;
+
+        // 判定 (假設標準為 3mm / 60m)
+        // 嚴格來說應該計算角度 i，但現場通常直接看總誤差量
+        const limit = 3.0; 
+        const isPass = Math.abs(errorMM) <= limit;
+
+        // 顯示結果
+        document.getElementById('true-dh').innerText = trueDH.toFixed(4);
+        document.getElementById('meas-dh').innerText = measDH.toFixed(4);
+        document.getElementById('error-val').innerText = (errorMM > 0 ? "+" : "") + errorMM.toFixed(2);
+        
+        const statusElem = document.getElementById('status-text');
+        if (isPass) {
+            statusElem.innerHTML = "✅ 合格 (PASS)";
+            statusElem.className = "status-pass";
+        } else {
+            statusElem.innerHTML = "⚠️ 不合格 (FAIL) - 需校正";
+            statusElem.className = "status-fail";
+        }
+
+        document.getElementById('result-area').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

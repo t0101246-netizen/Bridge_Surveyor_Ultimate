@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 11: 數據的煉金術——Python 自動化批次處理</title>
+    <style>
+        :root {
+            --bg-theory: #f0fdfa; /* 數據流的青色 */
+            --bg-field: #fffaf0;
+            --bg-tool: #1e1e1e; /* VS Code 風格深色 */
+            --text-main: #334155;
+            --text-light: #d4d4d4;
+            --accent-py: #3776ab; /* Python 藍 */
+            --accent-lib: #eab308; /* Python 黃 */
+            --border-color: #cbd5e1;
+            --code-font: 'Fira Code', 'Consolas', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-py);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-py); color: #0f766e; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-lib); color: #b45309; }
+
+        /* 工具面板 (模擬 IDE) */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #333;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .ide-header {
+            background: #2d2d2d;
+            padding: 10px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ide-title { font-family: var(--code-font); font-size: 14px; color: #9cdcfe; }
+        
+        .ide-content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        /* 程式碼區塊 */
+        pre {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: var(--code-font);
+            font-size: 14px;
+            color: #d4d4d4;
+            border: 1px solid #444;
+        }
+        .keyword { color: #569cd6; } /* def, import */
+        .function { color: #dcdcaa; } /* print */
+        .string { color: #ce9178; } /* "text" */
+        .comment { color: #6a9955; } /* # comment */
+
+        /* CSV 模擬區 */
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #252526;
+            color: #d4d4d4;
+            border: 1px solid #444;
+            padding: 10px;
+            font-family: var(--code-font);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background: #3776ab;
+            color: white; border: none; padding: 10px 20px;
+            font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            font-family: var(--code-font);
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #2b5b84; }
+
+        .output-console {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            font-family: var(--code-font);
+            font-size: 13px;
+            color: #cccccc;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .log-info { color: #4ade80; }
+        .log-err { color: #f87171; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 11: 數據的煉金術 — Python 自動化批次處理</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Masters Program: 當數據量超過一萬筆時，滑鼠是無用的。你需要的是程式碼的迴圈 (Loop)。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🏭 直觀譬喻：數據工廠的輸送帶</h2>
+        <p>如果 Excel 是「手工藝」，每一行都要你親手調整；那麼 Python 就是「自動化流水線」。</p>
+        <p>想像你有 10,000 顆待分類的蘋果（測點數據）：
+        <br>1. <strong>Pandas (圖書館員)：</strong> 負責把亂七八糟的數據整理成乾淨的表格 (DataFrame)。
+        <br>2. <strong>Regex (篩選網)：</strong> 就像設下了特定形狀的濾網，專門抓取那些長得像坐標的字串，過濾掉雜訊。
+        <br>3. <strong>Loop (機器手臂)：</strong> 不知疲倦地對每一行執行相同的計算公式，速度是人類的 1000 倍。</p>
+
+        <h2>🐍 視覺圖解：ETL 流程 (Extract, Transform, Load)</h2>
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+             <svg viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 50 50 L 150 50 L 150 150 L 50 150 Z" fill="#e2e8f0" stroke="#333" stroke-width="2"/>
+                <text x="100" y="90" text-anchor="middle" font-weight="bold">RAW Files</text>
+                <text x="100" y="110" text-anchor="middle" font-size="12" fill="#64748b">.GSI / .SDR / .CSV</text>
+
+                <path d="M 160 100 L 240 100" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+                <rect x="250" y="30" width="300" height="140" fill="#f0fdfa" stroke="#0f766e" stroke-width="2" rx="10"/>
+                <text x="400" y="60" text-anchor="middle" font-weight="bold" fill="#0f766e">Python Script (The Engine)</text>
+                
+                <rect x="270" y="80" width="80" height="40" fill="#3776ab" rx="4"/>
+                <text x="310" y="105" text-anchor="middle" fill="white" font-size="12">Regex 解析</text>
+                
+                <rect x="360" y="80" width="80" height="40" fill="#eab308" rx="4"/>
+                <text x="400" y="105" text-anchor="middle" fill="black" font-size="12">Pandas 清洗</text>
+                
+                <rect x="450" y="80" width="80" height="40" fill="#10b981" rx="4"/>
+                <text x="490" y="105" text-anchor="middle" fill="white" font-size="12">Numpy 計算</text>
+
+                <path d="M 560 100 L 640 100" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+                <path d="M 650 50 L 750 50 L 750 150 L 650 150 Z" fill="#dbeafe" stroke="#333" stroke-width="2"/>
+                <text x="700" y="90" text-anchor="middle" font-weight="bold">Clean Report</text>
+                <text x="700" y="110" text-anchor="middle" font-size="12" fill="#64748b">.XLSX / .HTML</text>
+
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+                    </marker>
+                </defs>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：Python 是中間的黑盒子。不管輸入格式多亂，輸出的永遠是標準化的成果。</p>
+        </div>
+
+        <h2>💻 硬核理論：正規表示法 (Regex)</h2>
+        <p>全站儀原始數據通常長這樣：<br>
+        <code>110001+00000TP1 31..00+00123456 81..00+...</code></p>
+        <p>這不是給人看的，是給機器看的。要提取其中的數據，我們不能用「第幾個字」，因為長度會變。我們必須使用 **Regex (Regular Expression)**。</p>
+        <ul>
+            <li><code>\d+</code>：匹配任意數字。</li>
+            <li><code>TP\d+</code>：匹配 "TP" 開頭接數字的點號。</li>
+            <li><code>(?&lt;=31..00\+)\d+</code>：(Lookbehind) 尋找 "31..00+" 後面的數字（通常是水平角）。</li>
+        </ul>
+        <p>學會 Regex，你就擁有了在數百萬字元中瞬間找到目標的「上帝之眼」。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：GIGO 原則</h2>
+            
+            <h3>1. Garbage In, Garbage Out</h3>
+            <p>程式跑得再快，如果輸入的原始檔有錯，輸出的就是一堆廢物。
+            <br><strong>自動化的陷阱：</strong> 批次處理會讓你懶得看數據。以前手算時，你會發現「咦？這個距離 5000 米怪怪的」。現在程式一秒跑完，你可能直接就把錯誤的報表交出去了。
+            <br><strong>解法：</strong> 在 Python 腳本中加入「斷言 (Assert)」或「閾值檢查」。例如：<code>if dist > 1000: print("警告：超長距離")</code>。</p>
+
+            <h3>2. 備份原始檔</h3>
+            <p>永遠不要直接對原始檔進行寫入操作。Python 腳本的第一步永遠是 <code>read</code>，最後一步是 <code>to_csv('new_file.csv')</code>。保留最原始的 Raw Data，是你保命的最後防線。</p>
+        </div>
+
+        <div class="tool-panel">
+            <div class="ide-header">
+                <span class="ide-title">main.py - Python Data Processor (Simulated)</span>
+                <span style="font-size:12px; color:#6a9955;">● Connected</span>
+            </div>
+            
+            <div class="ide-content">
+                <div style="margin-bottom: 10px;">
+                    <label style="color:#d4d4d4; font-size:14px;">1. Python 核心腳本 (請複製回本機執行)</label>
+                    <pre><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="comment"># 模擬: 計算坐標 (Batch Processing)</span>
+<span class="keyword">def</span> <span class="function">calculate_coords</span>(df):
+    <span class="comment"># 向量化計算: 速度是 for loop 的百倍</span>
+    rads = np.deg2rad(df[<span class="string">'Azimuth'</span>])
+    df[<span class="string">'dN'</span>] = df[<span class="string">'Dist'</span>] * np.cos(rads)
+    df[<span class="string">'dE'</span>] = df[<span class="string">'Dist'</span>] * np.sin(rads)
+    <span class="keyword">return</span> df
+
+<span class="comment"># 主程式</span>
+<span class="keyword">def</span> <span class="function">main</span>(csv_file):
+    df = pd.read_csv(csv_file)
+    <span class="function">print</span>(<span class="string">f"Loaded {len(df)} points."</span>)
+    
+    <span class="comment"># 清洗數據: 去除距離為 0 的噪點</span>
+    df = df[df[<span class="string">'Dist'</span>] > <span class="keyword">0</span>]
+    
+    result = calculate_coords(df)
+    result.to_csv(<span class="string">'report.csv'</span>)
+    <span class="function">print</span>(<span class="string">"Processing Complete."</span>)</pre>
+                </div>
+
+                <div>
+                    <label style="color:#d4d4d4; font-size:14px;">2. 線上模擬器 (JS Engine)</label>
+                    <p style="font-size:12px; color:#64748b; margin-bottom:5px;">貼上 CSV 格式數據：點號, 方位角(度), 距離(m)</p>
+                    <textarea id="csv-input">TP1, 45.0, 100.0
+TP2, 135.0, 50.5
+TP3, 0.0, 0
+TP4, 90.0, 200.0
+BadPoint, 0, -10</textarea>
+                    
+                    <button class="btn" onclick="runBatchProcess()">▶ Run Batch Process</button>
+                </div>
+
+                <div>
+                    <label style="color:#d4d4d4; font-size:14px;">Terminal Output</label>
+                    <div id="console" class="output-console">> Waiting for input...</div >
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function runBatchProcess() {
+        const input = document.getElementById('csv-input').value;
+        const consoleDiv = document.getElementById('console');
+        
+        consoleDiv.innerHTML = "> Initializing Python Simulator...\n";
+        
+        // 模擬延遲
+        setTimeout(() => {
+            try {
+                // 1. 解析 CSV (Parsing)
+                const lines = input.trim().split('\n');
+                consoleDiv.innerHTML += `<span class="log-info">[INFO] Loaded ${lines.length} lines.</span>\n`;
+                
+                let processedData = [];
+                let errorCount = 0;
+
+                consoleDiv.innerHTML += "> Starting Data Cleaning & Calculation...\n";
+
+                // 2. 模擬 Pandas DataFrame 處理
+                lines.forEach((line, index) => {
+                    const cols = line.split(',').map(s => s.trim());
+                    
+                    if(cols.length < 3) return; // Skip invalid
+
+                    const id = cols[0];
+                    const az = parseFloat(cols[1]);
+                    const dist = parseFloat(cols[2]);
+
+                    // 數據清洗邏輯
+                    if (isNaN(az) || isNaN(dist)) {
+                        consoleDiv.innerHTML += `<span class="log-err">[WARN] Line ${index+1}: Invalid Number format. Dropped.</span>\n`;
+                        errorCount++;
+                        return;
+                    }
+
+                    if (dist <= 0) {
+                        consoleDiv.innerHTML += `<span class="log-err">[WARN] Line ${index+1}: Distance <= 0 (${dist}). Dropped (Noise).</span>\n`;
+                        errorCount++;
+                        return;
+                    }
+
+                    // 向量計算模擬
+                    const rad = az * (Math.PI / 180);
+                    const dN = dist * Math.cos(rad);
+                    const dE = dist * Math.sin(rad);
+
+                    processedData.push({
+                        id: id,
+                        n: dN.toFixed(3),
+                        e: dE.toFixed(3)
+                    });
+                });
+
+                // 3. 輸出報告
+                consoleDiv.innerHTML += "------------------------------------------------\n";
+                consoleDiv.innerHTML += `ID\t\tNorth(dN)\tEast(dE)\n`;
+                consoleDiv.innerHTML += "------------------------------------------------\n";
+                
+                processedData.forEach(d => {
+                    consoleDiv.innerHTML += `${d.id}\t\t${d.n}\t\t${d.e}\n`;
+                });
+
+                consoleDiv.innerHTML += "------------------------------------------------\n";
+                consoleDiv.innerHTML += `<span class="log-info">[SUCCESS] Exported ${processedData.length} clean points.</span>\n`;
+                if(errorCount > 0) {
+                    consoleDiv.innerHTML += `<span class="log-err">[SUMMARY] Removed ${errorCount} bad records.</span>\n`;
+                }
+
+            } catch (e) {
+                consoleDiv.innerHTML += `<span class="log-err">[CRITICAL ERROR] ${e.message}</span>`;
+            }
+        }, 800);
+    }
+</script>
+
+</body>
+</html>

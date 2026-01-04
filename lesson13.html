@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 13: 上帝的視角——無人機航測 (UAV)</title>
+    <style>
+        :root {
+            --bg-theory: #e0f2fe; /* 天空藍背景 */
+            --bg-field: #fffaf0;
+            --bg-tool: #0c4a6e; /* 深空藍 */
+            --text-main: #334155;
+            --text-light: #f0f9ff;
+            --accent-sky: #0ea5e9; /* 航空藍 */
+            --accent-ground: #854d0e; /* 大地棕 */
+            --border-color: #cbd5e1;
+            --tech-font: 'Fira Code', 'Consolas', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-sky);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-sky); color: #0369a1; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-ground); color: #713f12; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #7dd3fc;
+        }
+        .tool-panel h2 { color: var(--accent-sky); text-transform: uppercase; letter-spacing: 2px; }
+
+        /* Python Code Block */
+        .code-block {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: var(--tech-font);
+            font-size: 14px;
+            color: #d4d4d4;
+            border: 1px solid #334155;
+            margin-bottom: 20px;
+        }
+        .kw { color: #c084fc; } 
+        .fn { color: #60a5fa; } 
+        .str { color: #4ade80; } 
+        .com { color: #64748b; }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Volume Simulator */
+        .sim-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            background: #082f49; padding: 15px; border-radius: 8px; margin-bottom: 15px;
+        }
+        .sim-input label { display: block; font-size: 12px; color: #7dd3fc; margin-bottom: 5px; }
+        .sim-input input { 
+            width: 100%; padding: 8px; background: #0c4a6e; border: 1px solid #38bdf8; color: white; border-radius: 4px; 
+            font-family: var(--tech-font); text-align: right;
+        }
+
+        .visualizer {
+            background: #000; height: 200px; width: 100%; position: relative;
+            border-bottom: 2px solid #38bdf8;
+            overflow: hidden;
+        }
+        .terrain-layer { position: absolute; bottom: 0; width: 100%; opacity: 0.8; transition: all 0.5s; }
+        
+        .btn {
+            background: var(--accent-sky);
+            color: white; border: none; padding: 12px;
+            font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #0284c7; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 13: 上帝的視角 — 無人機航測 (UAV)</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Masters Program: 用幾千張照片拼出地球的形狀。從 DSM 到 DTM，這是一場去蕪存菁的戰爭。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🦅 直觀譬喻：蒼蠅的複眼</h2>
+        <p>人類的兩隻眼睛能產生立體感（雙目視覺）。
+        <br>無人機航測的原理 <strong>SfM (Structure from Motion)</strong>，就像是有幾千隻眼睛同時盯著地面。
+        <br>無人機在飛行時，對同一個物體從不同角度拍了好幾張照片（高重疊率）。電腦通過比對這些照片中的「特徵點」，就能反算出物體的 3D 深度，就像你的大腦把左右眼的影像合成出立體世界一樣。</p>
+
+        <h2>🏔️ 視覺圖解：DSM vs DTM</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 0 250 L 800 250 L 800 300 L 0 300 Z" fill="#713f12" />
+                
+                <path d="M 0 250 Q 200 200 400 250 T 800 220" fill="none" stroke="#eab308" stroke-width="4" stroke-dasharray="5"/>
+                <text x="50" y="270" fill="#eab308" font-weight="bold">DTM (數位地形模型)</text>
+                
+                <g transform="translate(150, 225)">
+                    <rect x="0" y="-40" width="20" height="40" fill="#65a30d"/> <circle cx="10" cy="-50" r="30" fill="#65a30d" opacity="0.8"/> </g>
+                <g transform="translate(600, 235)">
+                    <rect x="0" y="-30" width="40" height="30" fill="#ef4444"/> </g>
+
+                <path d="M 0 250 Q 150 225 150 175 L 170 175 Q 170 225 300 235 T 600 205 L 640 205 L 650 225 T 800 220" fill="none" stroke="#0ea5e9" stroke-width="3"/>
+                <text x="50" y="150" fill="#0ea5e9" font-weight="bold">DSM (數位表面模型)</text>
+
+                <path d="M 50 50 L 750 50" stroke="#94a3b8" stroke-dasharray="10"/>
+                <image href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23333'><path d='M22 14h-2.1l-1.9-5h-3l-2-4h-2l-2 4h-3l-1.9 5H2v2h20v-2z'/></svg>" x="380" y="35" width="40" height="40"/>
+                
+                <path d="M 400 60 L 300 250" stroke="#cbd5e1" opacity="0.5"/>
+                <path d="M 400 60 L 500 250" stroke="#cbd5e1" opacity="0.5"/>
+
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：土方計算的死敵是 DSM。如果你算土方時沒把「樹」和「挖土機」濾掉 (也就是沒轉成 DTM)，你的業主會因為多付了幾百萬而殺了你。</p>
+        </div>
+
+        <h2>🧮 硬核理論：體積積分</h2>
+        <p>土方量 $V$ 是通過將網格（Grid）中每個像素的高程差積分得出的。</p>
+        <div class="math-card">
+            V = \sum_{i=1}^{n} (H_{DSM, i} - H_{Design, i}) \times GSD^2
+        </div>
+        <ul>
+            <li>$GSD$ (地面採樣距離)：照片上 1 個像素代表實際地面幾公分。通常飛 100m 高，GSD 約為 2-3cm。</li>
+            <li>$H_{DSM}$：測量高程。</li>
+            <li>$H_{Design}$：設計高程 (或開挖前高程)。</li>
+        </ul>
+        <p><strong>誤差來源：</strong> 1. GSD 太大 (飛太高)。 2. 邊緣變形 (魚眼效應)。 3. 植被未濾除 (DTM 製作失敗)。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：控制點是生命</h2>
+            
+            <h3>1. GCP (地面控制點) 不能省</h3>
+            <p>不要相信無人機自帶的 GPS！那只有 3-5 公尺的精度。
+            <br>想要算土方，你必須在地上佈設 <strong>GCP (Ground Control Points)</strong>。
+            <br>● <strong>密度：</strong> 每 5-10 公頃至少 5 個點（四角+中心）。
+            <br>● <strong>測量：</strong> 用 RTK 或全站儀測出 GCP 的精確坐標。
+            <br>沒有 GCP 的模型，就像漂浮在空中的果凍，隨時會扭曲變形。</p>
+
+            <h3>2. 重疊率 (Overlap) 的黃金法則</h3>
+            <p>為了確保 SfM 算法能找到特徵點：
+            <br>● <strong>航向重疊 (Front Overlap)：</strong> 至少 <strong>75% - 80%</strong>。
+            <br>● <strong>旁向重疊 (Side Overlap)：</strong> 至少 <strong>60% - 70%</strong>。
+            <br>如果你為了省電池而飛太快或間距太寬，回去跑圖時就會出現「破洞」，到時候只能哭著重飛。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🚁 Python 實戰：Rasterio 土方計算</h2>
+            <div class="code-block">
+<span class="kw">import</span> rasterio
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">calculate_volume</span>(dsm_path, base_level):
+    <span class="kw">with</span> rasterio.<span class="fn">open</span>(dsm_path) <span class="kw">as</span> src:
+        <span class="com"># 1. 讀取高程數據矩陣</span>
+        elevation_data = src.read(<span class="str">1</span>)
+        
+        <span class="com"># 2. 獲取像素面積 (GSD^2)</span>
+        res_x = src.res[<span class="str">0</span>] <span class="com"># e.g., 0.05m</span>
+        res_y = src.res[<span class="str">1</span>]
+        pixel_area = res_x * res_y
+
+        <span class="com"># 3. 過濾無效值 (NoData)</span>
+        valid_mask = elevation_data != src.nodata
+        valid_elev = elevation_data[valid_mask]
+
+        <span class="com"># 4. 計算高程差 (高於基準面才算填方)</span>
+        diff = valid_elev - base_level
+        fill_volume = np.sum(diff[diff > <span class="str">0</span>]) * pixel_area
+        
+        <span class="kw">return</span> fill_volume
+            </div>
+
+            <h2>🏗️ 互動模擬：土方量體估算器</h2>
+            <p style="font-size:12px; color:#7dd3fc; margin-bottom:10px;">模擬一個 100m x 100m 的土方堆積場。</p>
+            
+            <div class="sim-grid">
+                <div class="sim-input">
+                    <label>場地面積 (m²)</label>
+                    <input type="number" id="area" value="10000" disabled>
+                </div>
+                <div class="sim-input">
+                    <label>平均堆土高度 (m)</label>
+                    <input type="number" id="avg-height" value="3.5" step="0.1" oninput="updateVis()">
+                </div>
+                <div class="sim-input">
+                    <label>GSD 解析度 (cm)</label>
+                    <input type="number" id="gsd" value="5" step="1">
+                </div>
+                <div class="sim-input">
+                    <label>植被雜訊干擾 (%)</label>
+                    <input type="number" id="noise" value="10" step="5" placeholder="未移除植被比例">
+                </div>
+            </div>
+
+            <div class="visualizer" id="vis-container">
+                <div id="vis-base" style="position:absolute; bottom:0; height:20px; width:100%; background:#854d0e;"></div>
+                <div id="vis-soil" style="position:absolute; bottom:20px; height:0px; width:100%; background:#eab308; transition: height 0.3s;"></div>
+                <div id="vis-veg" style="position:absolute; bottom:20px; height:0px; width:100%; background:repeating-linear-gradient(45deg, #65a30d, #65a30d 10px, #000 10px, #000 20px); opacity:0.5;"></div>
+                <div style="position:absolute; top:10px; left:10px; color:white; font-size:12px; font-family:monospace;">
+                    DSM Profile Preview
+                </div>
+            </div>
+
+            <div style="background:#0f172a; padding:15px; margin-top:10px; border-radius:4px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="color:#eab308;">純土方體積 (Net):</span>
+                    <span id="res-net" style="color:white; font-weight:bold;">0 m³</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#0ea5e9;">含雜訊體積 (Raw DSM):</span>
+                    <span id="res-raw" style="color:#ef4444; font-weight:bold;">0 m³</span>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; text-align:right; margin-top:5px;">
+                    誤差: <span id="res-err">0%</span>
+                </div>
+            </div>
+
+            <button class="btn" style="margin-top:15px;" onclick="calculateSim()">🔄 重新計算</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function updateVis() {
+        // 純視覺更新
+        const h = parseFloat(document.getElementById('avg-height').value);
+        // 限制顯示高度
+        const displayH = Math.min(h * 10, 150); 
+        document.getElementById('vis-soil').style.height = displayH + 'px';
+        
+        const noise = parseFloat(document.getElementById('noise').value);
+        // 雜訊高度 (假設雜訊平均比土高 1m)
+        const noiseH = displayH + 20; 
+        document.getElementById('vis-veg').style.height = noiseH + 'px';
+        document.getElementById('vis-veg').style.width = noise + '%';
+        document.getElementById('vis-veg').style.left = (100 - noise) / 2 + '%';
+    }
+
+    function calculateSim() {
+        const area = 10000;
+        const h = parseFloat(document.getElementById('avg-height').value);
+        const noisePct = parseFloat(document.getElementById('noise').value);
+        
+        // 真實體積
+        const netVol = area * h;
+
+        // 雜訊體積 (假設雜訊區域平均高出 1.5m，例如草叢或樹)
+        const noiseArea = area * (noisePct / 100);
+        const noiseVol = noiseArea * (h + 1.5);
+        const cleanArea = area - noiseArea;
+        const cleanVol = cleanArea * h;
+        
+        const rawVol = cleanVol + noiseVol;
+        const error = ((rawVol - netVol) / netVol) * 100;
+
+        // Animation
+        let currentNet = 0;
+        let currentRaw = 0;
+        const steps = 20;
+        const stepNet = netVol / steps;
+        const stepRaw = rawVol / steps;
+
+        const interval = setInterval(() => {
+            currentNet += stepNet;
+            currentRaw += stepRaw;
+            
+            if(currentNet >= netVol) {
+                currentNet = netVol;
+                currentRaw = rawVol;
+                clearInterval(interval);
+            }
+
+            document.getElementById('res-net').innerText = Math.round(currentNet).toLocaleString() + " m³";
+            document.getElementById('res-raw').innerText = Math.round(currentRaw).toLocaleString() + " m³";
+            document.getElementById('res-err').innerText = "+" + error.toFixed(1) + "%";
+            
+            if(error > 5) {
+                document.getElementById('res-raw').style.color = "#ef4444"; // Red warning
+            } else {
+                document.getElementById('res-raw').style.color = "#4ade80"; // Green ok
+            }
+        }, 30);
+
+        updateVis();
+    }
+
+    // Init
+    updateVis();
+    calculateSim();
+</script>
+
+</body>
+</html>

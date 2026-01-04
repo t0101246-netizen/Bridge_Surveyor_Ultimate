@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 10: 最後的防線——變位監測與竣工測量</title>
+    <style>
+        :root {
+            --bg-theory: #fdf2f8; /* 警示紅粉色調 */
+            --bg-field: #fffaf0;
+            --bg-tool: #000000; /* 全黑監控室風格 */
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-alert: #dc2626; /* 警報紅 */
+            --accent-safe: #10b981; /* 安全綠 */
+            --accent-warn: #f59e0b; /* 警告黃 */
+            --border-color: #cbd5e1;
+            --tech-mono: 'Courier New', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-alert);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-alert); color: #991b1b; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-warn); color: #b45309; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #333;
+        }
+        .tool-panel h2 { border-color: var(--accent-alert); color: var(--accent-alert); text-transform: uppercase; letter-spacing: 2px; }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-alert);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入介面 */
+        .monitor-grid {
+            display: grid; grid-template-columns: 1fr 1fr 100px; gap: 10px; margin-bottom: 10px;
+            background: #111; padding: 10px; border-radius: 4px; border: 1px solid #333;
+        }
+        label { display: block; font-size: 12px; margin-bottom: 5px; color: #64748b; }
+        input {
+            width: 100%; padding: 8px; background: #222; border: 1px solid #444;
+            color: var(--accent-safe); border-radius: 4px; font-size: 16px; font-family: var(--tech-mono);
+        }
+        input:focus { outline: 1px solid var(--accent-safe); }
+
+        .btn {
+            background: #b91c1c;
+            color: white; border: none; padding: 15px;
+            font-size: 18px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold;
+            font-family: var(--tech-mono); text-transform: uppercase;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #dc2626; }
+        .btn-add { background: #334155; margin-bottom: 15px; padding: 10px; font-size: 14px; }
+
+        /* 監控儀表板顯示 */
+        .dashboard-screen {
+            margin-top: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+        }
+        .stat-box {
+            background: #111; border: 1px solid #333; padding: 15px; border-radius: 4px;
+            text-align: center;
+        }
+        .stat-val { font-size: 28px; font-weight: bold; font-family: var(--tech-mono); display: block; margin-top: 5px;}
+        .status-ok { color: var(--accent-safe); }
+        .status-warn { color: var(--accent-warn); animation: pulse 2s infinite; }
+        .status-danger { color: var(--accent-alert); animation: blink 0.5s infinite; }
+
+        @keyframes blink { 0% {opacity:1;} 50% {opacity:0.3;} 100% {opacity:1;} }
+        @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.6;} 100% {opacity:1;} }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 10: 最後的防線 — 變位監測與竣工測量</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 橋樑會說話。你的任務是聽懂它的語言：趨勢、速率與加速度。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🏥 直觀譬喻：結構的心電圖</h2>
+        <p>監測數據就是橋樑的心電圖。</p>
+        <p>1. <strong>穩定型 (Stable)：</strong> 就像平穩的心跳。數據在一個小範圍內波動（受溫度影響），但長期趨勢是水平的。這是健康的橋。
+        <br>2. <strong>收斂型 (Converging)：</strong> 像剛跑完步心跳逐漸慢下來。新建橋樑剛通車時，沉陷量會較大，但隨著時間推移，沉陷速率越來越慢，最終趨於穩定。
+        <br>3. <strong>發散型 (Diverging)：</strong> 這是心室顫動的前兆！如果你發現沉陷速率「越來越快」（加速度為正），代表結構正在崩潰，必須立即封橋。</p>
+
+        <h2>📉 視覺圖解：時間-沉陷曲線 (Time-Settlement Curve)</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <line x1="50" y1="50" x2="50" y2="300" stroke="#333" stroke-width="2"/>
+                <line x1="50" y1="50" x2="750" y2="50" stroke="#333" stroke-width="2"/>
+                <text x="760" y="55" font-size="14">時間 (t)</text>
+                <text x="30" y="320" font-size="14" writing-mode="tb">沉陷量 (S)</text>
+
+                <path d="M 50 50 Q 200 150 700 160" fill="none" stroke="#10b981" stroke-width="3"/>
+                <text x="710" y="165" fill="#10b981" font-weight="bold">安全 (收斂)</text>
+
+                <line x1="50" y1="50" x2="700" y2="250" stroke="#f59e0b" stroke-width="3" stroke-dasharray="5"/>
+                <text x="710" y="255" fill="#f59e0b" font-weight="bold">警戒 (等速)</text>
+
+                <path d="M 50 50 Q 400 100 600 320" fill="none" stroke="#dc2626" stroke-width="4"/>
+                <text x="610" y="320" fill="#dc2626" font-weight="bold">危險 (加速)</text>
+
+                <line x1="50" y1="200" x2="750" y2="200" stroke="#94a3b8" stroke-dasharray="2"/>
+                <text x="60" y="195" fill="#94a3b8" font-size="12">管理值 (Action Level)</text>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：不管累積沉陷量多少，我們最怕的是紅線——速率越來越快，這代表土壤已經失去承載力。</p>
+        </div>
+
+        <h2>🧮 硬核理論：速率分析</h2>
+        <p>單看累積沉陷量 $S$ 是不夠的，我們必須看微分。</p>
+        <div class="math-card">
+            v = \frac{\Delta S}{\Delta t}, \quad a = \frac{\Delta v}{\Delta t}
+        </div>
+        <ul>
+            <li><strong>沉陷速率 $v$ (mm/day)：</strong> 如果 $v$ 持續大於 2mm/day 且不減緩，即為異常。</li>
+            <li><strong>沉陷加速度 $a$：</strong> 
+                <br>若 $a < 0$ (負值)：速率變慢，趨於穩定 (Safe)。
+                <br>若 $a > 0$ (正值)：速率變快，結構正在走向破壞 (Danger)。
+            </li>
+        </ul>
+        <p><strong>回歸分析預測：</strong>
+        <br>利用對數函數 $S(t) = a + b \ln(t)$ 來擬合收斂曲線。如果實際觀測值偏離這條預測線並向上翹起，就是警訊。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：誰在說謊？</h2>
+            
+            <h3>1. 基準點 (Bench Mark) 的背叛</h3>
+            <p>當你發現橋樑下沉了 5mm，有沒有可能其實是<strong>你的基準點 (BM) 上升了 5mm？</strong>
+            <br>這在工地極為常見。重車經過、堆置土方都會影響基準點。
+            <br><strong>鐵則：</strong> 監測網必須包含至少 3 個位於工區外 500m 以上的「深層岩盤樁」作為絕對控制點。每次監測前，先檢核這 3 點是否相對穩定。</p>
+
+            <h3>2. 熱脹冷縮的雜訊</h3>
+            <p>長跨距鋼橋，中午和晚上的高程可以差到 3-5 公分。
+            <br>如果你早上 8 點測第一次，下午 2 點測第二次，你會以為橋塌了。
+            <br><strong>解法：</strong> 固定時間測量（例如都在清晨 6:00 無日照時），或者建立溫度修正模型。不要被太陽騙了。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🚨 互動工具：智慧監測戰情室</h2>
+            <p>輸入歷次監測數據，系統自動計算速率趨勢並發布警報。</p>
+            
+            <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                <label>管理值設定 (Thresholds)</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label>警戒值 (Alert) mm/day</label>
+                        <input type="number" id="limit-alert" value="1.0">
+                    </div>
+                    <div>
+                        <label>行動值 (Action) mm/day</label>
+                        <input type="number" id="limit-action" value="2.0">
+                    </div>
+                </div>
+            </div>
+
+            <div id="data-inputs">
+                </div>
+            
+            <button class="btn btn-add" onclick="addDataRow()">+ 新增監測日 (Add Date)</button>
+            <button class="btn" onclick="analyzeTrend()">⚡ 執行趨勢診斷</button>
+
+            <div class="dashboard-screen" id="dashboard" style="display:none;">
+                <div class="stat-box" style="grid-column: 1 / -1;">
+                    <span class="res-label">系統狀態 SYSTEM STATUS</span>
+                    <span class="stat-val" id="sys-status">--</span>
+                </div>
+                <div class="stat-box">
+                    <span class="res-label">目前速率 (Velocity)</span>
+                    <span class="stat-val" id="curr-vel">--</span>
+                    <span style="font-size:12px; color:#64748b;">mm/day</span>
+                </div>
+                <div class="stat-box">
+                    <span class="res-label">累積沉陷 (Total)</span>
+                    <span class="stat-val" id="total-settle">--</span>
+                    <span style="font-size:12px; color:#64748b;">mm</span>
+                </div>
+                <div class="stat-box" style="grid-column: 1 / -1; text-align:left; font-size:14px; color:#ccc;">
+                    <span class="res-label">診斷日誌 LOG:</span>
+                    <div id="log-content" style="margin-top:5px; font-family: monospace;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 預設數據 (模擬加速破壞)
+    const demoData = [
+        {day: 1, val: 10.00},
+        {day: 5, val: 10.50},
+        {day: 10, val: 11.20},
+        {day: 15, val: 12.50},
+        {day: 18, val: 14.00} // 最後三天加速
+    ];
+
+    function init() {
+        const container = document.getElementById('data-inputs');
+        container.innerHTML = "";
+        demoData.forEach((d, i) => {
+            addDataRow(d.day, d.val);
+        });
+    }
+
+    function addDataRow(dayVal = "", readingVal = "") {
+        const container = document.getElementById('data-inputs');
+        const div = document.createElement('div');
+        div.className = 'monitor-grid';
+        div.innerHTML = `
+            <div>
+                <label>天數 (Day)</label>
+                <input type="number" class="inp-day" value="${dayVal}">
+            </div>
+            <div>
+                <label>讀數 (Elev m)</label>
+                <input type="number" class="inp-val" value="${readingVal}" step="0.001">
+            </div>
+            <div style="display:flex; align-items:end;">
+                 <button style="background:#333; color:#fff; border:none; padding:5px; width:100%; cursor:pointer;" onclick="this.parentElement.parentElement.remove()">Del</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function analyzeTrend() {
+        const days = document.querySelectorAll('.inp-day');
+        const vals = document.querySelectorAll('.inp-val');
+        let data = [];
+
+        for(let i=0; i<days.length; i++) {
+            let d = parseFloat(days[i].value);
+            let v = parseFloat(vals[i].value);
+            if(!isNaN(d) && !isNaN(v)) {
+                data.push({t: d, h: v});
+            }
+        }
+
+        // 排序
+        data.sort((a, b) => a.t - b.t);
+
+        if(data.length < 2) {
+            alert("請至少輸入兩筆數據！");
+            return;
+        }
+
+        // 參數
+        const limitAlert = parseFloat(document.getElementById('limit-alert').value);
+        const limitAction = parseFloat(document.getElementById('limit-action').value);
+
+        // 計算初始高程
+        const h0 = data[0].h;
+        
+        // 分析最後一段區間
+        const last = data[data.length-1];
+        const prev = data[data.length-2];
+        
+        const dt = last.t - prev.t;
+        const dh = Math.abs(last.h - prev.h); // 取絕對值看變化量
+        const totalSettle = (last.h - h0) * 1000; // mm
+
+        // 速率 mm/day
+        let velocity = 0;
+        if (dt > 0) {
+            velocity = (dh * 1000) / dt;
+        }
+
+        // 診斷狀態
+        const sysStatus = document.getElementById('sys-status');
+        const currVel = document.getElementById('curr-vel');
+        const totSet = document.getElementById('total-settle');
+        const log = document.getElementById('log-content');
+
+        currVel.innerText = velocity.toFixed(2);
+        totSet.innerText = totalSettle.toFixed(1);
+
+        let logText = "";
+        
+        // 判斷邏輯
+        if (velocity >= limitAction) {
+            sysStatus.innerHTML = "DANGER / 行動值超標";
+            sysStatus.className = "stat-val status-danger";
+            logText += `[CRITICAL] 速率 ${velocity.toFixed(2)} > ${limitAction} mm/day. 結構可能失穩，立即停工檢查！`;
+        } else if (velocity >= limitAlert) {
+            sysStatus.innerHTML = "WARNING / 警戒值超標";
+            sysStatus.className = "stat-val status-warn";
+            logText += `[WARN] 速率 ${velocity.toFixed(2)} > ${limitAlert} mm/day. 需增加監測頻率。`;
+        } else {
+            sysStatus.innerHTML = "NORMAL / 穩定";
+            sysStatus.className = "stat-val status-ok";
+            logText += `[OK] 速率 ${velocity.toFixed(2)} mm/day. 在容許範圍內。`;
+        }
+
+        // 加速度趨勢 (如果有3點以上)
+        if (data.length >= 3) {
+            const prev2 = data[data.length-3];
+            const dt2 = prev.t - prev2.t;
+            const dh2 = Math.abs(prev.h - prev2.h);
+            const v_prev = (dt2 > 0) ? (dh2 * 1000) / dt2 : 0;
+            
+            const accel = velocity - v_prev;
+            logText += `<br>[TREND] 加速度: ${accel > 0 ? "+" : ""}${accel.toFixed(2)} mm/day² (${accel > 0 ? "加速變形中 ⚠️" : "趨於收斂 ✅"})`;
+        }
+
+        log.innerHTML = logText;
+        document.getElementById('dashboard').style.display = 'grid';
+    }
+
+    // 初始化
+    init();
+</script>
+
+</body>
+</html>

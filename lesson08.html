@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 08: 豎曲線與超高——舒適度的秘密</title>
+    <style>
+        :root {
+            --bg-theory: #ecfeff; /* 青空色，象徵起伏的天際線 */
+            --bg-field: #fffaf0;
+            --bg-tool: #1a202c;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-sky: #0ea5e9; /* 天空藍 */
+            --accent-danger: #ef4444; /* 警示紅 */
+            --border-color: #cbd5e1;
+            --tech-green: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-sky);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-sky); color: #0284c7; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-danger); color: #b91c1c; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #334155;
+        }
+        .tool-panel h2 { border-color: var(--tech-green); color: var(--tech-green); }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-sky);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入介面 */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #94a3b8; }
+        input {
+            width: 100%; padding: 12px; background: #1e293b; border: 1px solid #475569;
+            color: white; border-radius: 6px; font-size: 18px; font-family: 'Consolas', monospace;
+        }
+        input:focus { outline: 2px solid var(--accent-sky); border-color: transparent; }
+
+        .btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white; border: none; padding: 15px;
+            font-size: 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+
+        /* 表格結果 */
+        .table-container {
+            max-height: 350px; overflow-y: auto; margin-top: 20px;
+            border: 1px solid #334155; border-radius: 8px;
+        }
+        table { width: 100%; border-collapse: collapse; font-family: 'Consolas', monospace; font-size: 16px; }
+        th { background: #334155; color: #cbd5e1; padding: 10px; text-align: left; position: sticky; top: 0; }
+        td { padding: 10px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+        tr:nth-child(even) { background: #1e293b; }
+        .highlight { color: var(--tech-green); font-weight: bold; }
+        .low-point { color: var(--accent-danger); font-weight: bold; background: rgba(239, 68, 68, 0.1); }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 08: 豎曲線與超高 — 舒適度的秘密</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 為什麼開車過橋不會飛起來？為什麼轉彎時咖啡不會灑出來？答案在拋物線裡。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>☕ 直觀譬喻：咖啡杯測試</h2>
+        <p><strong>豎曲線 (Vertical Curve)</strong> 的好壞，取決於一杯放在儀表板上的咖啡。</p>
+        <p>1. <strong>凸曲線 (Crest)：</strong> 如果車子開到最高點時，你的屁股離開座椅（失重），咖啡飛起來，代表曲線半徑太小（K值太低）。
+        <br>2. <strong>凹曲線 (Sag)：</strong> 如果車子開到谷底時，你感覺被重壓在椅子上，懸吊系統發出哀號，同樣是不合格的設計。</p>
+        <p>我們使用「拋物線」來連接兩個坡度，目的是讓垂直加速度（G力）保持恆定且微小，讓乘客感覺不到坡度的變化。</p>
+
+        <h2>📉 視覺圖解：拋物線與坡度差</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <line x1="50" y1="300" x2="750" y2="300" stroke="#f1f5f9" stroke-width="1"/>
+
+                <line x1="100" y1="250" x2="400" y2="100" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5"/> <line x1="400" y1="100" x2="700" y2="250" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5"/> <circle cx="400" cy="100" r="5" fill="#ef4444"/>
+                <text x="400" y="80" text-anchor="middle" font-weight="bold" fill="#ef4444">PVI (交點)</text>
+                <text x="200" y="160" fill="#64748b" transform="rotate(-26 200,160)">g1 = +3%</text>
+                <text x="600" y="160" fill="#64748b" transform="rotate(26 600,160)">g2 = -3%</text>
+
+                <path d="M 100 250 Q 400 175 700 250" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                
+                <circle cx="100" cy="250" r="5" fill="#0ea5e9"/>
+                <text x="100" y="280" text-anchor="middle" font-weight="bold" fill="#0ea5e9">BVC (起點)</text>
+
+                <circle cx="700" cy="250" r="5" fill="#0ea5e9"/>
+                <text x="700" y="280" text-anchor="middle" font-weight="bold" fill="#0ea5e9">EVC (終點)</text>
+
+                <line x1="400" y1="100" x2="400" y2="175" stroke="#333" stroke-width="1"/>
+                <text x="410" y="140" font-size="14">偏移量 m</text>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：豎曲線是一條二次拋物線。它的特性是每一公尺的坡度變化率 (r) 是固定的。</p>
+        </div>
+
+        <h2>🧮 硬核理論：拋物線方程式</h2>
+        <p>豎曲線的數學模型為 $Y = ax^2 + bx + c$。在工程上，我們這樣定義：</p>
+        <div class="math-card">
+            Y_x = Y_{BVC} + g_1 x + \frac{r}{2}x^2
+        </div>
+        <ul>
+            <li>$x$: 距離 BVC 的水平距離。</li>
+            <li>$g_1$: 入口坡度 (例如 +0.03)。</li>
+            <li>$r$: 坡度變化率 (Rate of Change), $r = \frac{g_2 - g_1}{L}$。</li>
+            <li>$L$: 曲線水平長度。</li>
+        </ul>
+
+        <p><strong>最高/最低點在哪？</strong>
+        <br>這是施工最重要的點（因為這裡不排水！）。令一次微分為 0：
+        <br>$x_{vertex} = - \frac{g_1}{r}$</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：水的詛咒</h2>
+            
+            <h3>1. 0% 坡度的死亡陷阱</h3>
+            <p>在凹形豎曲線的最低點，或是超高轉換（從左高右低變成左低右高）的瞬間，會有一個區域的<strong>坡度為 0%</strong>。</p>
+            <p><strong>現場鐵則：</strong>
+            <br>絕對不能讓「豎曲線的最低點」和「超高轉換的 0% 斷面」重疊！
+            <br>如果這兩個點碰在一起，那裡就會形成一個永遠乾不了的「人工湖」，車輛經過必定水漂失控。測量主任必須在放樣前，把高程表拿來對照這兩個關鍵點的位置。</p>
+
+            <h3>2. 橋面高程檢核</h3>
+            <p>橋梁通常每 2-5 公尺就算一個斷面。
+            <br><strong>不要只看設計圖的高程表！</strong> 自己用公式算一遍。為什麼？因為設計單位的 Excel 偶爾會拉錯格，或者在小數點進位上有誤差。你的 JavaScript 計算機是最後一道防線。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>📉 互動工具：豎曲線高程計算機</h2>
+            <p>輸入 PVI 資料，自動解算任意點高程與極值點位置。</p>
+            
+            <div class="input-grid">
+                <div>
+                    <label>PVI 樁號 (Station)</label>
+                    <input type="number" id="pviSta" value="2500">
+                </div>
+                <div>
+                    <label>PVI 高程 (Elev m)</label>
+                    <input type="number" id="pviElev" value="100.000">
+                </div>
+            </div>
+
+            <div class="input-grid">
+                <div>
+                    <label>入口坡度 g1 (%)</label>
+                    <input type="number" id="g1" value="2.5" placeholder="+上坡 -下坡">
+                </div>
+                <div>
+                    <label>出口坡度 g2 (%)</label>
+                    <input type="number" id="g2" value="-1.5">
+                </div>
+            </div>
+
+            <div class="input-grid">
+                <div>
+                    <label>曲線長度 L (m)</label>
+                    <input type="number" id="L" value="200">
+                </div>
+                <div>
+                    <label>計算間距 (m)</label>
+                    <input type="number" id="interval" value="20">
+                </div>
+            </div>
+
+            <button class="btn" onclick="calcVerticalCurve()">📐 計算高程表</button>
+
+            <div class="table-container" id="result-container" style="display:none;">
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>樁號</th>
+                            <th>x (距起點)</th>
+                            <th>高程 (Elev)</th>
+                            <th>備註</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function formatStation(val) {
+        let k = Math.floor(val / 1000);
+        let m = val % 1000;
+        return `${k}k+${m.toFixed(2).padStart(6, '0')}`;
+    }
+
+    function calcVerticalCurve() {
+        const pviSta = parseFloat(document.getElementById('pviSta').value);
+        const pviElev = parseFloat(document.getElementById('pviElev').value);
+        const g1_percent = parseFloat(document.getElementById('g1').value);
+        const g2_percent = parseFloat(document.getElementById('g2').value);
+        const L = parseFloat(document.getElementById('L').value);
+        const interval = parseFloat(document.getElementById('interval').value);
+
+        if ([pviSta, pviElev, g1_percent, g2_percent, L, interval].some(isNaN)) {
+            alert("請輸入完整參數！");
+            return;
+        }
+
+        // 轉換坡度為小數
+        const g1 = g1_percent / 100;
+        const g2 = g2_percent / 100;
+
+        // 1. 計算幾何參數
+        const bvcSta = pviSta - L / 2;
+        const evcSta = pviSta + L / 2;
+        
+        // BVC 高程 = PVI 高程 - g1 * (L/2)
+        const bvcElev = pviElev - g1 * (L / 2);
+
+        // 坡度變化率 r = (g2 - g1) / L
+        const r = (g2 - g1) / L;
+
+        // 極值點位置 (x from BVC)
+        // g1 + r*x = 0 => x = -g1 / r
+        let x_vertex = -g1 / r;
+        let vertexSta = bvcSta + x_vertex;
+        let hasVertex = (x_vertex > 0 && x_vertex < L);
+
+        // 2. 生成點位
+        let points = [];
+        points.push({sta: bvcSta, type: 'BVC'});
+        
+        // 整樁
+        let curr = Math.ceil(bvcSta / interval) * interval;
+        if (curr <= bvcSta) curr += interval;
+        while (curr < evcSta) {
+            points.push({sta: curr, type: ''});
+            curr += interval;
+        }
+        
+        // 加入極值點 (如果有的話)
+        if (hasVertex) {
+            points.push({sta: vertexSta, type: (r < 0 ? 'HIGH' : 'LOW')});
+        }
+        
+        points.push({sta: evcSta, type: 'EVC'});
+
+        // 排序
+        points.sort((a, b) => a.sta - b.sta);
+        
+        // 去重 (如果有極值點剛好在整樁上)
+        points = points.filter((item, pos, ary) => {
+            return !pos || item.sta !== ary[pos - 1].sta;
+        });
+
+        // 3. 計算並顯示
+        const tbody = document.getElementById('result-table').querySelector('tbody');
+        tbody.innerHTML = "";
+
+        points.forEach(p => {
+            let x = p.sta - bvcSta;
+            // 拋物線公式 Y = Y_bvc + g1*x + (r/2)*x^2
+            let y = bvcElev + g1 * x + (r / 2) * x * x;
+            
+            let row = document.createElement('tr');
+            let noteClass = '';
+            if (p.type === 'BVC' || p.type === 'EVC') noteClass = 'highlight';
+            if (p.type === 'HIGH' || p.type === 'LOW') noteClass = 'low-point';
+
+            row.innerHTML = `
+                <td>${formatStation(p.sta)}</td>
+                <td>${x.toFixed(2)}</td>
+                <td style="font-weight:bold; color:#0ea5e9;">${y.toFixed(4)}</td>
+                <td class="${noteClass}">${p.type}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('result-container').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

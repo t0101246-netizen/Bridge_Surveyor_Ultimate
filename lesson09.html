@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 09: 與重力對抗——預拱度 (Pre-camber) 計算</title>
+    <style>
+        :root {
+            --bg-theory: #f1f5f9; /* 鋼鐵灰背景 */
+            --bg-field: #fffaf0;
+            --bg-tool: #0f172a;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-steel: #475569; /* 鋼構色 */
+            --accent-safety: #eab308; /* 工安黃 */
+            --border-color: #cbd5e1;
+            --force-red: #ef4444; /* 力學紅 */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-steel);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-steel); color: #1e293b; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-safety); color: #b45309; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #334155;
+        }
+        .tool-panel h2 { border-color: var(--accent-safety); color: var(--accent-safety); }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-steel);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入介面 */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #94a3b8; }
+        input {
+            width: 100%; padding: 12px; background: #1e293b; border: 1px solid #475569;
+            color: white; border-radius: 6px; font-size: 18px; font-family: 'Consolas', monospace;
+        }
+        input:focus { outline: 2px solid var(--accent-safety); border-color: transparent; }
+
+        .btn {
+            background: linear-gradient(135deg, #eab308, #ca8a04);
+            color: black; border: none; padding: 15px;
+            font-size: 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+
+        .result-display {
+            background: #000; border: 2px solid #334155; padding: 20px;
+            border-radius: 8px; margin-top: 20px; font-family: 'Consolas', monospace;
+        }
+        .res-big { font-size: 32px; font-weight: bold; color: var(--accent-safety); display: block; margin: 10px 0; }
+        .res-label { color: #94a3b8; font-size: 14px; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 09: 與重力對抗 — 預拱度 (Pre-camber) 計算</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 為了讓橋變直，你必須先把它蓋彎。這是一場與地心引力的博弈。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🏹 直觀譬喻：獵人的弓</h2>
+        <p>想像一塊長木板架在兩塊磚頭上。如果你站上去，木板會向下彎曲（撓度 Deflection）。
+        <br>如果你希望當你站上去時，木板剛好是<strong>水平</strong>的，該怎麼做？</p>
+        <p>你必須先把木板做成一把<strong>向上彎的弓</strong>。
+        <br>這個「向上彎的量」，就是<strong>預拱度 (Pre-camber)</strong>。
+        <br>當重力（你）把木板壓下來時，剛好抵銷了預拱，木板就變平了。</p>
+
+        <h2>🏗️ 視覺圖解：高程的加減法</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+                <line x1="50" y1="200" x2="750" y2="200" stroke="#94a3b8" stroke-dasharray="5"/>
+                <text x="760" y="205" font-size="14" fill="#64748b">設計高程 (Design)</text>
+
+                <path d="M 50 200 Q 400 300 750 200" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="2"/>
+                <text x="400" y="280" text-anchor="middle" fill="#ef4444">▼ 自重撓度 δ (Dead Load)</text>
+
+                <path d="M 50 200 Q 400 100 750 200" fill="none" stroke="#eab308" stroke-width="4"/>
+                <text x="400" y="120" text-anchor="middle" font-weight="bold" fill="#b45309">▲ 預拱度 (Camber)</text>
+
+                <line x1="400" y1="200" x2="400" y2="250" stroke="#ef4444" marker-end="url(#arrow-down)"/>
+                <line x1="400" y1="200" x2="400" y2="150" stroke="#eab308" marker-end="url(#arrow-up)"/>
+
+                <defs>
+                    <marker id="arrow-down" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" fill="#ef4444">
+                        <path d="M0,0 L0,6 L9,3 z" />
+                    </marker>
+                    <marker id="arrow-up" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" fill="#eab308">
+                        <path d="M0,0 L0,6 L9,3 z" />
+                    </marker>
+                </defs>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：為了對抗紅色的下垂，我們必須製作黃色的預拱。最終目標是兩者相加等於灰色的設計線。</p>
+        </div>
+
+        <h2>🧮 硬核理論：放樣高程公式</h2>
+        <p>測量員在現場給出的模版高程，<strong>絕對不是</strong>設計圖上的高程。</p>
+        <div class="math-card">
+            H_{模版} = H_{設計} + \delta_{DL} + \delta_{SDL} + \delta_{Creep}
+        </div>
+        <ul>
+            <li>$H_{設計}$：竣工後的目標線型。</li>
+            <li>$\delta_{DL}$：大梁自重產生的撓度 (向下為正，需補償)。</li>
+            <li>$\delta_{SDL}$：二期靜載重 (如護欄、AC路面) 產生的撓度。</li>
+            <li>$\delta_{Creep}$：混凝土潛變與乾縮造成的長期變形。</li>
+        </ul>
+        <p><strong>注意符號陷阱：</strong><br>
+        結構技師給的數據通常是「撓度 (Deflection)」，數值是向下的（例如 -5cm）。<br>
+        你要做的「預拱 (Camber)」，數值是向上的（例如 +5cm）。<br>
+        <strong>公式簡化：放樣值 = 設計值 - 預估變形量 (含正負號)</strong></p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：澆置中的動態戰場</h2>
+            
+            <h3>1. 支撐沉陷 (Falsework Settlement)</h3>
+            <p>除了橋會彎，底下的鷹架 (支撐架) 也會被壓扁！
+            <br>這是結構技師算不到的，必須由工地實測。
+            <br><strong>經驗法則：</strong> 每一層鷹架接頭會吃掉 1-2mm。如果這座橋下有 10 層鷹架，你必須額外把模版抬高 1-2 公分來抵銷鷹架的壓縮。</p>
+
+            <h3>2. 鋼構 vs. 混凝土</h3>
+            <p>● <strong>鋼橋：</strong> 預拱度是在工廠裡把鋼板「切彎」做出來的。現場測量員只能檢核，很難調整。
+            <br>● <strong>混凝土橋 (懸臂工法/支撐工法)：</strong> 這是測量員的主場。每一節塊 (Segment) 都要算預拱。
+            <br><strong>關鍵時刻：</strong> 混凝土澆置前一刻，必須再次複測模版高程。因為鋼筋綁紮的重量可能已經讓模版下沉了 5mm，這 5mm 必須「頂」回來。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🆙 互動工具：預拱度合成計算器</h2>
+            <p>輸入設計值與結構技師提供的變形量，計算現場模版放樣高程。</p>
+            
+            <div class="input-grid">
+                <div>
+                    <label>設計高程 Design Elev (m)</label>
+                    <input type="number" id="h_design" value="100.000" step="0.001">
+                </div>
+                <div>
+                    <label>預期總沉陷 Total Deflection (mm)</label>
+                    <input type="number" id="deflection" value="-45" placeholder="向下為負 (e.g., -45)">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px; padding: 10px; background: #1e293b; border-radius: 6px;">
+                <label style="color:#cbd5e1; margin-bottom:10px;">工地額外補償 (Field Adjustment)</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label>支撐壓縮預估 (mm)</label>
+                        <input type="number" id="settle_scaff" value="10" placeholder="向上補償 (正值)">
+                    </div>
+                    <div>
+                        <label>其他預留 (mm)</label>
+                        <input type="number" id="settle_other" value="5">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calcCamber()">🔨 計算模版放樣高程</button>
+
+            <div class="result-display" id="result-screen" style="display:none;">
+                <div>
+                    <span class="res-label">總預拱補償量 (Total Camber):</span>
+                    <span id="res-camber" style="font-size: 24px; color: #eab308; font-weight: bold;">--</span>
+                    <span style="color:#64748b;"> mm</span>
+                </div>
+                <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
+                    <span class="res-label">模版放樣高程 (Target Elev):</span>
+                    <span class="res-big" id="res-target">--</span>
+                </div>
+                <p style="font-size:12px; color:#ef4444; margin-top:5px;">*注意：此高程包含「抵抗重力」的預留量，澆置完成後應沉陷至接近設計值。</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function calcCamber() {
+        const hDesign = parseFloat(document.getElementById('h_design').value);
+        const deflection = parseFloat(document.getElementById('deflection').value); // 預期下沉量 (通常為負)
+        const scaffold = parseFloat(document.getElementById('settle_scaff').value); // 支撐補償 (正)
+        const other = parseFloat(document.getElementById('settle_other').value);
+
+        if ([hDesign, deflection, scaffold, other].some(isNaN)) {
+            alert("請輸入完整數據！");
+            return;
+        }
+
+        // 邏輯：
+        // 結構會下沉 D (例如 -45mm)
+        // 所以我們要預先抬高 -D (即 +45mm)
+        // 支撐會被壓扁 S (例如 10mm)
+        // 所以我們要再抬高 +S (即 +10mm)
+        
+        // 總預拱量 (Camber) = -(Deflection) + Scaffold + Other
+        // 如果 Deflection 輸入的是負值 (代表下沉)，則抵銷它需要用 減號 或 絕對值
+        // 這裡假設使用者輸入負值代表下沉
+        
+        const structCamber = -1 * deflection; // 抵銷結構變形
+        const fieldCamber = scaffold + other; // 抵銷施工變形
+        
+        const totalCamberMM = structCamber + fieldCamber;
+        const totalCamberM = totalCamberMM / 1000;
+
+        const targetElev = hDesign + totalCamberM;
+
+        // 顯示結果
+        const sign = totalCamberMM >= 0 ? "+" : "";
+        document.getElementById('res-camber').innerText = sign + totalCamberMM.toFixed(1);
+        document.getElementById('res-target').innerText = targetElev.toFixed(4);
+        
+        document.getElementById('result-screen').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

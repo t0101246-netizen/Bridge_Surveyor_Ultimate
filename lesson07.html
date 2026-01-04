@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 07: 公路的腰身——單曲線與緩和曲線</title>
+    <style>
+        :root {
+            --bg-theory: #fff7ed; /* 暖橙色背景，象徵道路警示 */
+            --bg-field: #fffaf0;
+            --bg-tool: #1a202c;
+            --text-main: #334155;
+            --text-light: #f8fafc;
+            --accent-road: #f59e0b; /* 道路黃 */
+            --accent-geo: #ea580c; /* 幾何橙 */
+            --border-color: #cbd5e1;
+            --tech-cyan: #06b6d4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 98%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 2rem;
+            border-bottom: 4px solid var(--accent-road);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 36px; font-weight: 800; color: #1e293b; letter-spacing: -0.025em; }
+        h2 { font-size: 28px; margin-top: 1.5rem; margin-bottom: 1rem; border-left: 5px solid; padding-left: 15px; }
+        p, li { font-size: 22px; margin-bottom: 1rem; text-align: justify; }
+
+        /* 左欄 */
+        .theory-column {
+            background-color: var(--bg-theory);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .theory-column h2 { border-color: var(--accent-geo); color: #c2410c; }
+
+        /* 右欄 */
+        .field-column { display: flex; flex-direction: column; gap: 20px; }
+        .field-panel {
+            background-color: var(--bg-field);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .field-panel h2 { border-color: var(--accent-road); color: #b45309; }
+
+        /* 工具面板 */
+        .tool-panel {
+            background-color: var(--bg-tool);
+            color: var(--text-light);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            position: sticky;
+            top: 20px;
+            border: 1px solid #334155;
+        }
+        .tool-panel h2 { border-color: var(--accent-road); color: var(--accent-road); }
+
+        /* SVG */
+        .svg-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 數學卡片 */
+        .math-card {
+            background: white;
+            padding: 20px;
+            border-left: 4px solid var(--accent-geo);
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 輸入介面 */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: #94a3b8; }
+        input {
+            width: 100%; padding: 12px; background: #1e293b; border: 1px solid #475569;
+            color: white; border-radius: 6px; font-size: 18px; font-family: 'Consolas', monospace;
+        }
+        input:focus { outline: 2px solid var(--accent-road); border-color: transparent; }
+
+        .btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white; border: none; padding: 15px;
+            font-size: 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+
+        /* 表格結果 */
+        .table-container {
+            max-height: 400px; overflow-y: auto; margin-top: 20px;
+            border: 1px solid #334155; border-radius: 8px;
+        }
+        table { width: 100%; border-collapse: collapse; font-family: 'Consolas', monospace; font-size: 16px; }
+        th { background: #334155; color: #cbd5e1; padding: 10px; text-align: left; position: sticky; top: 0; }
+        td { padding: 10px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+        tr:nth-child(even) { background: #1e293b; }
+        tr:hover { background: #334155; }
+        .highlight { color: var(--accent-road); font-weight: bold; }
+
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .tool-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Lesson 07: 公路的腰身 — 單曲線與緩和曲線</h1>
+    <p style="color: #64748b; font-size: 18px; margin-bottom: 0;">Road to Expert: 直線與圓無法直接相連。就像開車不能瞬間把方向盤打到底，我們需要「緩和」。</p>
+</header>
+
+<div class="container">
+    <div class="theory-column">
+        
+        <h2>🚗 直觀譬喻：方向盤的軌跡</h2>
+        <p>如果你在直線行駛 (半徑 R = 無限大)，突然進入一個 R=200m 的圓彎，你的車會發生什麼事？
+        <br><strong>離心力會瞬間從 0 變成最大值。</strong> 乘客會像被撞擊一樣甩出去。</p>
+        <p>真實的開車過程是：
+        <br>1. 直線：方向盤不動。
+        <br>2. <strong>緩和段 (Spiral)：</strong> 均勻地轉動方向盤 (曲率 $k$ 從 0 漸變到 $1/R$)。
+        <br>3. 圓曲線 (Circular)：固定方向盤角度 (曲率固定)。</p>
+        <p>這種「半徑由無限大漸變至定值」的曲線，在數學上稱為<strong>克羅索曲線 (Clothoid)</strong>，也就是高速公路工程中的「緩和曲線」。</p>
+
+        <h2>📐 視覺圖解：圓曲線要素 (PC, PI, PT)</h2>
+        <div class="svg-container">
+            <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <line x1="50" y1="350" x2="400" y2="50" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5"/>
+                <line x1="750" y1="350" x2="400" y2="50" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5"/>
+                <text x="400" y="40" text-anchor="middle" font-weight="bold" fill="#64748b">交點 IP (V)</text>
+
+                <path d="M 150 264 A 300 300 0 0 1 650 264" fill="none" stroke="#f97316" stroke-width="4"/>
+
+                <circle cx="150" cy="264" r="6" fill="#c2410c"/>
+                <text x="130" y="260" font-weight="bold" fill="#c2410c">起點 BC (PC)</text>
+
+                <circle cx="650" cy="264" r="6" fill="#c2410c"/>
+                <text x="670" y="260" font-weight="bold" fill="#c2410c">終點 EC (PT)</text>
+
+                <circle cx="400" cy="300" r="4" fill="#333"/>
+                <text x="400" y="320" text-anchor="middle" font-size="14">中點 MC</text>
+
+                <line x1="400" y1="50" x2="400" y2="300" stroke="#333" stroke-width="1"/>
+                <text x="410" y="150" font-size="14">外距 E</text>
+
+                <line x1="150" y1="264" x2="650" y2="264" stroke="#cbd5e1" stroke-dasharray="2"/>
+                <text x="400" y="280" font-size="14" fill="#666">長弦 C</text>
+
+                <path d="M 400 100 Q 400 120 420 120" fill="none" stroke="#333"/>
+                <text x="430" y="110" font-size="14">交角 I (Δ)</text>
+            </svg>
+            <p style="font-size: 16px; color: #64748b; margin-top: 10px;">圖解：路橋工程最基本的單曲線。切線交於 IP 點，曲線內切。外距 E 與切線長 T 是放樣的控制核心。</p>
+        </div>
+
+        <h2>🧮 硬核理論：偏角法 (Deflection Angle)</h2>
+        <p>在沒有全站儀坐標放樣的年代，工程師只靠經緯儀和皮尺就能畫出完美的圓。這靠的是幾何學的奇蹟：<strong>弦切角等於圓周角的一半。</strong></p>
+        
+        <p>假設你想在曲線上放樣一點 $P$，距離起點 $BC$ 的弧長為 $l$。</p>
+        <div class="math-card">
+            偏角 \delta = \frac{l}{2R} \times \frac{180}{\pi}
+        </div>
+        <p>實務常用公式 (分計算)：<br>
+        $\delta (min) = 1718.87 \times \frac{l}{R}$</p>
+        <p><strong>操作邏輯：</strong>
+        <br>1. 儀器架在 BC 點，後視 IP 點 (歸零)。
+        <br>2. 旋轉角度 $\delta_1$，拉距離 $C_1$ 定出樁位 1。
+        <br>3. 旋轉角度 $\delta_2$，從樁位 1 拉距離 $C_2$ (或從 BC 拉總長) 定出樁位 2。</p>
+    </div>
+
+    <div class="field-column">
+        
+        <div class="field-panel">
+            <h2>👷 主任的對講機：坐標不是萬能的</h2>
+            
+            <h3>1. 為什麼還要學偏角法？</h3>
+            <p>「現在不都用坐標放樣了嗎？」
+            <br>是的。但在隧道、樹林或全站儀沒電時，<strong>偏角法+皮尺</strong>是唯一的救命索。更重要的是，當你懷疑坐標放樣有錯 (例如曲線看起來不順)，偏角法是最直觀的<strong>幾何檢核</strong>手段。</p>
+
+            <h3>2. 短弦長 (Short Chord) 的選擇</h3>
+            <p>我們無法在現場拉出「弧線」，只能拉「直線(弦)」。
+            <br>為了讓直線逼近圓弧，樁距必須夠短。
+            <br>● $R > 600m$：每 20m 一樁。
+            <br>● $R < 300m$：每 10m 一樁。
+            <br>● $R < 50m$ (匝道)：每 5m 一樁。
+            <br>如果樁距太大，做出來的路會像多邊形，而不是圓。</p>
+        </div>
+
+        <div class="tool-panel">
+            <h2>🚧 互動工具：曲線放樣數據生成器</h2>
+            <p>輸入設計參數，自動生成「偏角法」放樣表。</p>
+            
+            <div class="input-grid">
+                <div>
+                    <label>曲線半徑 R (m)</label>
+                    <input type="number" id="radius" value="200">
+                </div>
+                <div>
+                    <label>交角 I (Degree)</label>
+                    <input type="number" id="deltaI" value="60">
+                </div>
+            </div>
+
+            <div class="input-grid">
+                <div>
+                    <label>起點樁號 BC (ex: 1230.5)</label>
+                    <input type="number" id="stationBC" value="1000">
+                </div>
+                <div>
+                    <label>放樣間距 (m)</label>
+                    <input type="number" id="interval" value="20">
+                </div>
+            </div>
+
+            <button class="btn" onclick="calcCurve()">📐 生成放樣數據表</button>
+
+            <div class="table-container" id="result-container" style="display:none;">
+                <div style="padding:10px; background:#1e293b; border-bottom:1px solid #334155;">
+                    <span style="color:#94a3b8;">曲線長 L: <span id="res-L" style="color:white;">--</span> m</span> | 
+                    <span style="color:#94a3b8;">切線長 T: <span id="res-T" style="color:white;">--</span> m</span>
+                </div>
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>樁號 (Station)</th>
+                            <th>弧長 l</th>
+                            <th>偏角 (Deflection)</th>
+                            <th>累積弦長 (Chord)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function formatStation(val) {
+        // 格式化樁號 1000 -> 1k+000
+        let k = Math.floor(val / 1000);
+        let m = val % 1000;
+        return `${k}k+${m.toFixed(2).padStart(6, '0')}`; // 0k+120.00
+    }
+
+    function formatDMS(degVal) {
+        let d = Math.floor(degVal);
+        let m = Math.floor((degVal - d) * 60);
+        let s = Math.round(((degVal - d) * 60 - m) * 60);
+        if(s === 60) { s=0; m++; }
+        if(m === 60) { m=0; d++; }
+        return `${d}°${m.toString().padStart(2,'0')}'${s.toString().padStart(2,'0')}"`;
+    }
+
+    function calcCurve() {
+        const R = parseFloat(document.getElementById('radius').value);
+        const I = parseFloat(document.getElementById('deltaI').value);
+        const BC_sta = parseFloat(document.getElementById('stationBC').value);
+        const interval = parseFloat(document.getElementById('interval').value);
+
+        if([R, I, BC_sta, interval].some(isNaN)) {
+            alert("請輸入完整參數");
+            return;
+        }
+
+        // 1. 計算幾何要素
+        const I_rad = I * Math.PI / 180;
+        const T = R * Math.tan(I_rad / 2);
+        const L = R * I_rad; // 曲線長
+        const EC_sta = BC_sta + L;
+
+        document.getElementById('res-L').innerText = L.toFixed(3);
+        document.getElementById('res-T').innerText = T.toFixed(3);
+
+        // 2. 生成樁號列表
+        // 第一個整樁號
+        let currentSta = Math.ceil(BC_sta / interval) * interval;
+        if (currentSta <= BC_sta) currentSta += interval;
+
+        let points = [];
+        
+        // 加入 BC
+        points.push({ sta: BC_sta, type: 'BC' });
+
+        // 加入中間樁
+        while (currentSta < EC_sta) {
+            points.push({ sta: currentSta, type: 'Sta' });
+            currentSta += interval;
+        }
+
+        // 加入 EC
+        points.push({ sta: EC_sta, type: 'EC' });
+
+        // 3. 計算每個點的偏角與弦長
+        let tbody = document.getElementById('result-table').querySelector('tbody');
+        tbody.innerHTML = "";
+
+        points.forEach(p => {
+            let l = p.sta - BC_sta; // 弧長
+            if (l < 0) l = 0; // 防呆
+
+            // 偏角公式: delta = (l / 2R) * (180/PI)
+            let delta_deg = (l / (2 * R)) * (180 / Math.PI);
+            
+            // 弦長公式: C = 2R * sin(delta)
+            let C = 2 * R * Math.sin(delta_deg * Math.PI / 180);
+
+            let row = document.createElement('tr');
+            let staClass = p.type === 'BC' || p.type === 'EC' ? 'highlight' : '';
+            
+            row.innerHTML = `
+                <td class="${staClass}">${p.type === 'Sta' ? '' : p.type + ' '}${formatStation(p.sta)}</td>
+                <td>${l.toFixed(2)}</td>
+                <td style="color:#f59e0b;">${formatDMS(delta_deg)}</td>
+                <td>${C.toFixed(3)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('result-container').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
